@@ -13,9 +13,10 @@ options(digits = 3)
 knitr::opts_chunk$set(fig.height = 2.5)
 ```
 
-**(a)** Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
+## Exercise 1
 
-For question 1a, we created several figures, which include histogram, Q-Q plot. According to the Q-Q plots, we can conclude that Before and After both confirm to a normal distribution, since the plots is approximately on a straight line.
+**(a)** <!--Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
+--> For question 1a, we created several figures to check the characteristics of the dataset, which include histogram, Q-Q plot. According to the Q-Q plots, we can conclude that the data Before and After both follow a normal distribution, since the plots is approximately on a straight line.From the histogram,we can also make the same conclusion.
 
 ```{r, echo = FALSE}
 data = read.table('cholesterol.txt', header = TRUE)
@@ -33,7 +34,25 @@ qqline(data$After8weeks, col="red")
 # 
 ```
 
-The correlation of these two columns(Before and After) can be calculated. Therefore, the value of correlation is 0.991, which can infer that they are correlated with each other.
+Besides,we also check the scale,symmetry and outliers of the dataset through boxplot.
+
+```{r}
+par(mfrow = c(1,2)) 
+boxplot(data$Before)
+boxplot(data$After8weeks)
+par(mfrow = c(1,1))
+```
+
+Then we also plot the scatter figures,we can see that there is approximately linear relation between these two values.
+
+```{r}
+plot(data$Before, data$After8weeks,
+     main = "Scatter Plot of Before vs. After 8 Weeks",
+     xlab = "Before", ylab = "After 8 Weeks",
+     col = "black", pch = 16)
+```
+
+The correlation of these two columns(Before and After) can also be calculated by Pearson . Therefore, the value of correlation is 0.991, which can infer that they are correlated with each other.
 
 ```{r}
 
@@ -41,8 +60,8 @@ cor.test(data$Before, data$After8weeks, method="pearson")
 
 ```
 
-**(b)** Apply a couple of relevant tests (at least two tests, see Lectures 2–3) to verify whether the diet with low fat margarine has an eﬀect (argue whether the data are paired or not). Is a permutation test applicable? Is the Mann-Whitney test applicable?
-
+<!--**(b)** Apply a couple of relevant tests (at least two tests, see Lectures 2–3) to verify whether the diet with low fat margarine has an eﬀect (argue whether the data are paired or not). Is a permutation test applicable? Is the Mann-Whitney test applicable?
+-->
 To answer the question about if the data are paired or not, the answer is yes. It is an experiment with two numerical outcomes per experimental unit. To be specific, the data are measured at two different time points, but within the same group of indiciduals. Therefore, Mann-Whitney test is not applicable, because it is utilized to compare two independent groups. However, the permutation test is applicable since we do not assume normality in a permutation test.
 
 First, we can conduct paired t-test as follows:
@@ -121,7 +140,7 @@ The difference between the two confidence intervals is slight. In my view, this 
 
 **d**
 
-We can use bootstrap method first as follows:
+We can use bootstrap method first as follows: The result may be slightly different for each bootstrap test.
 
 ```{r}
 n=length(data$After8weeks) # length
@@ -185,22 +204,16 @@ binom.test(below_4.5,n,p=0.25,alt="greater")
 
 Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is larger than 0.05. We can conclude that the percentage of cholesterol levels below 4.5 is at most 25%.
 
-
-
-
-
-
-
-
 ## Exercise 2
 
 <!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
 
 **(a)**
-
+Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions 
 **ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
 
 **Tests the independent effects**
+
 ```{r}
 df <- read.table("crops.txt", header = TRUE)
 df$County <- as.factor(df$County)
@@ -208,7 +221,9 @@ df$Related <- as.factor(df$Related)
 anova_model1 <- aov(Crops ~ County + Related, data = df) 
 summary(anova_model1)
 ```
+
 **Interaction model**
+
 ```{r}
 df <- read.table("crops.txt", header = TRUE)
 df$County <- as.factor(df$County)
@@ -216,8 +231,10 @@ df$Related <- as.factor(df$Related)
 anova_model2 <- aov(Crops ~ County + Related + County:Related, data = df) 
 summary(anova_model2)
 ```
-Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops.
-We choose the pure model to estimate the data.
+
+Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. 
+As there is no significance for the interaction model,we choose the pure model to estimate the data.
+
 ```{r}
 new_farm <- data.frame(
   County = factor(3, levels = c(1, 2, 3)), 
@@ -228,20 +245,21 @@ predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confide
 print(predicted_crops)
 ```
 
-Examining residuals can help assess if the model assumptions hold.
-We can see that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
+Examining residuals can help assess if the model assumptions hold. We can see that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
+
 ```{r}
-plot(fitted_values, residuals, main = "Residuals vs. Fitted", 
+plot(fitted_values1,residuals , main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
 abline(h = 0, col = "red", lty = 2)
 
 ```
+
 We can see that residuals are normally distributed.
 
 ```{r}
-residuals <- resid(anova_model1)
-fitted_values <- fitted(anova_model1) 
-qqnorm(residuals)
+residuals1 <- resid(anova_model1)
+fitted_values1 <- fitted(anova_model1) 
+qqnorm(residuals1)
 ```
 
 **(b)** ANOVA models only assumes that crops only depend on categorical factors,put size into perspective, we consider different ANCOVA models:
@@ -273,12 +291,25 @@ AIC(ancova_main, ancova_county_size, ancova_related_size)
 
 We can see from p-values that Size × County interaction terms is significant and this model have low AIC,thus we choose Size × County Interaction model.
 
-Significant County (p \< 0.05) → County has a strong effect on Crops.
+**(c)**
+We can review the ANCOVA Model Results.
 
-Significant Size (p \< 0.05) → Farm Size influences Crops.
+Significant County (p \< 0.05) → County influences on Crops,meaning crop yields differ across counties..
 
-Significant Related (p \> 0.05) → Relation between landlord and tenant do not affects Crops. **(c)**
+Significant Size (p \< 0.05) → Farm Size has a strong effect on  Crops,which makes sense—larger farms generally produce more.
 
+Significant Related (p \> 0.05) → Whether the landlord and tenant are related does not significantly impact the crops.
+
+Significant County × Size (p \< 0.05) → This suggests that the effect of farm size on crop yield depends on the county.
+The figure blow confirms this conclusion,as the slopes are different.
+```{r}
+library(ggplot2)
+ggplot(df, aes(x = Size, y = Crops, color = County)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Effect of Size on Crops Across Counties",
+       x = "Farm Size", y = "Crops Yield")
+```
 **(d)**
 
 ```{r}
@@ -294,6 +325,7 @@ print(predicted_crops)
 ```
 
 We can see that residuals are approximately normally distributed.
+
 ```{r}
 
 residuals <- resid(ancova_county_size)
@@ -301,6 +333,7 @@ fitted_values <- fitted(ancova_county_size)
 qqnorm(residuals)
 qqline(residuals, col = "red")
 ```
+
 ```{r}
 plot(fitted_values, residuals, 
      main = "Residuals vs Fitted Values", 
@@ -308,9 +341,12 @@ plot(fitted_values, residuals,
      ylab = "Residuals")
 abline(h = 0, col = "red", lty = 2) # Add a horizontal line at 0
 ```
-
-
+We  estimate the error variance.
 ```{r}
 error_variance <- sum(residuals(ancova_county_size)^2) / df.residual(ancova_county_size)
 print(error_variance)
 ```
+
+## Exercise 3
+
+**(a)**
