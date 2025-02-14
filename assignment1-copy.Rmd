@@ -185,6 +185,13 @@ binom.test(below_4.5,n,p=0.25,alt="greater")
 
 Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is larger than 0.05. We can conclude that the percentage of cholesterol levels below 4.5 is at most 25%.
 
+
+
+
+
+
+
+
 ## Exercise 2
 
 <!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
@@ -193,28 +200,51 @@ Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is l
 
 **ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
 
+**Tests the independent effects**
 ```{r}
 df <- read.table("crops.txt", header = TRUE)
 df$County <- as.factor(df$County)
 df$Related <- as.factor(df$Related)
-anova_model <- aov(Crops ~ County + Related + County:Related, data = df) 
-summary(anova_model)
+anova_model1 <- aov(Crops ~ County + Related, data = df) 
+summary(anova_model1)
+```
+**Interaction model**
+```{r}
+df <- read.table("crops.txt", header = TRUE)
+df$County <- as.factor(df$County)
+df$Related <- as.factor(df$Related)
+anova_model2 <- aov(Crops ~ County + Related + County:Related, data = df) 
+summary(anova_model2)
+```
+Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops.
+We choose the pure model to estimate the data.
+```{r}
+new_farm <- data.frame(
+  County = factor(3, levels = c(1, 2, 3)), 
+  Related = factor("no", levels = c("no", "yes"))
+)
+
+predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confidence")
+print(predicted_crops)
 ```
 
-Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. <!--But we can see that the interaction is better.-->
-
+Examining residuals can help assess if the model assumptions hold.
+We can see that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
 ```{r}
-residuals <- resid(anova_model)
-fitted_values <- fitted(anova_model) 
-qqnorm(residuals)
-
 plot(fitted_values, residuals, main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+
+```
+We can see that residuals are normally distributed.
+
+```{r}
+residuals <- resid(anova_model1)
+fitted_values <- fitted(anova_model1) 
+qqnorm(residuals)
 ```
 
-**(b)**
-
-We consider different ANCOVA models:
+**(b)** ANOVA models only assumes that crops only depend on categorical factors,put size into perspective, we consider different ANCOVA models:
 
 **Tests the independent effects**
 
@@ -260,7 +290,25 @@ new_farm <- data.frame(
 
 predicted_crops <- predict(ancova_county_size, newdata = new_farm, interval = "confidence")
 print(predicted_crops)
+
 ```
+
+We can see that residuals are approximately normally distributed.
+```{r}
+
+residuals <- resid(ancova_county_size)
+fitted_values <- fitted(ancova_county_size) 
+qqnorm(residuals)
+qqline(residuals, col = "red")
+```
+```{r}
+plot(fitted_values, residuals, 
+     main = "Residuals vs Fitted Values", 
+     xlab = "Fitted Values", 
+     ylab = "Residuals")
+abline(h = 0, col = "red", lty = 2) # Add a horizontal line at 0
+```
+
 
 ```{r}
 error_variance <- sum(residuals(ancova_county_size)^2) / df.residual(ancova_county_size)
