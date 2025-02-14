@@ -15,8 +15,10 @@ knitr::opts_chunk$set(fig.height = 2.5)
 
 ## Exercise 1
 
-**(a)** <!--Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
---> For question 1a, we created several figures to check the characteristics of the dataset, which include histogram, Q-Q plot. According to the Q-Q plots, we can conclude that the data Before and After both follow a normal distribution, since the plots is approximately on a straight line.From the histogram,we can also make the same conclusion.
+**(a)** 
+<!--Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
+--> 
+For question 1a, we created several figures to check the characteristics of the dataset, which include histogram, Q-Q plot. According to the Q-Q plots, we can conclude that the data Before and After both follow a normal distribution, since the plots is approximately on a straight line.From the histogram,we can also make the same conclusion.
 
 ```{r, echo = FALSE}
 data = read.table('cholesterol.txt', header = TRUE)
@@ -60,8 +62,11 @@ cor.test(data$Before, data$After8weeks, method="pearson")
 
 ```
 
+```{=html}
 <!--**(b)** Apply a couple of relevant tests (at least two tests, see Lectures 2–3) to verify whether the diet with low fat margarine has an eﬀect (argue whether the data are paired or not). Is a permutation test applicable? Is the Mann-Whitney test applicable?
 -->
+```
+
 To answer the question about if the data are paired or not, the answer is yes. It is an experiment with two numerical outcomes per experimental unit. To be specific, the data are measured at two different time points, but within the same group of indiciduals. Therefore, Mann-Whitney test is not applicable, because it is utilized to compare two independent groups. However, the permutation test is applicable since we do not assume normality in a permutation test.
 
 First, we can conduct paired t-test as follows:
@@ -141,7 +146,7 @@ The difference between the two confidence intervals is slight. In my view, this 
 **d**
 
 We can use bootstrap method first as follows: The result may be slightly different for each bootstrap test.
-
+We choose the maximum of the sample as the test statistic and set B as 1000.
 ```{r}
 n=length(data$After8weeks) # length
 t=max(data$After8weeks) # the max of samples
@@ -208,9 +213,7 @@ Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is l
 
 <!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
 
-**(a)**
-Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions 
-**ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
+**(a)** Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions **ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
 
 **Tests the independent effects**
 
@@ -232,8 +235,7 @@ anova_model2 <- aov(Crops ~ County + Related + County:Related, data = df)
 summary(anova_model2)
 ```
 
-Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. 
-As there is no significance for the interaction model,we choose the pure model to estimate the data.
+Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. As there is no significance for the interaction model,we choose the pure model to estimate the data.
 
 ```{r}
 new_farm <- data.frame(
@@ -291,17 +293,16 @@ AIC(ancova_main, ancova_county_size, ancova_related_size)
 
 We can see from p-values that Size × County interaction terms is significant and this model have low AIC,thus we choose Size × County Interaction model.
 
-**(c)**
-We can review the ANCOVA Model Results.
+**(c)** We can review the ANCOVA Model Results.
 
 Significant County (p \< 0.05) → County influences on Crops,meaning crop yields differ across counties..
 
-Significant Size (p \< 0.05) → Farm Size has a strong effect on  Crops,which makes sense—larger farms generally produce more.
+Significant Size (p \< 0.05) → Farm Size has a strong effect on Crops,which makes sense—larger farms generally produce more.
 
 Significant Related (p \> 0.05) → Whether the landlord and tenant are related does not significantly impact the crops.
 
-Significant County × Size (p \< 0.05) → This suggests that the effect of farm size on crop yield depends on the county.
-The figure blow confirms this conclusion,as the slopes are different.
+Significant County × Size (p \< 0.05) → This suggests that the effect of farm size on crop yield depends on the county. The figure blow confirms this conclusion,as the slopes are different.
+
 ```{r}
 library(ggplot2)
 ggplot(df, aes(x = Size, y = Crops, color = County)) +
@@ -310,6 +311,7 @@ ggplot(df, aes(x = Size, y = Crops, color = County)) +
   labs(title = "Effect of Size on Crops Across Counties",
        x = "Farm Size", y = "Crops Yield")
 ```
+
 **(d)**
 
 ```{r}
@@ -341,7 +343,9 @@ plot(fitted_values, residuals,
      ylab = "Residuals")
 abline(h = 0, col = "red", lty = 2) # Add a horizontal line at 0
 ```
-We  estimate the error variance.
+
+We estimate the error variance.
+
 ```{r}
 error_variance <- sum(residuals(ancova_county_size)^2) / df.residual(ancova_county_size)
 print(error_variance)
