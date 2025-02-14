@@ -1,0 +1,268 @@
+---
+title: "Assignment1"
+author: "Yinghao Luo, Zheyuan Zhang, Yujie Cao"
+output: pdf_document
+date: "2025-02-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# only round 3
+options(digits = 3)
+
+knitr::opts_chunk$set(fig.height = 2.5)
+```
+
+**(a)** Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
+
+For question 1a, we created several figures, which include histogram, Q-Q plot. According to the Q-Q plots, we can conclude that Before and After both confirm to a normal distribution, since the plots is approximately on a straight line.
+
+```{r, echo = FALSE}
+data = read.table('cholesterol.txt', header = TRUE)
+# Before
+par(mfrow = c(1,2))
+hist(data$Before, main="Before", xlab="Cholesterol (mmol/L)", col="lightblue", border="black")
+qqnorm(data$Before, main="Q-Q Plot for Before 8 Weeks")
+qqline(data$Before, col="red")
+
+# After
+hist(data$After8weeks, main="After 8 Weeks", xlab="Cholesterol (mmol/L)", col="lightgreen", border="black")
+qqnorm(data$After8weeks, main="Q-Q Plot for After 8 Weeks")
+qqline(data$After8weeks, col="red")
+
+# 
+```
+
+The correlation of these two columns(Before and After) can be calculated. Therefore, the value of correlation is 0.991, which can infer that they are correlated with each other.
+
+```{r}
+
+cor.test(data$Before, data$After8weeks, method="pearson")
+
+```
+
+**(b)** Apply a couple of relevant tests (at least two tests, see Lectures 2–3) to verify whether the diet with low fat margarine has an eﬀect (argue whether the data are paired or not). Is a permutation test applicable? Is the Mann-Whitney test applicable?
+
+To answer the question about if the data are paired or not, the answer is yes. It is an experiment with two numerical outcomes per experimental unit. To be specific, the data are measured at two different time points, but within the same group of indiciduals. Therefore, Mann-Whitney test is not applicable, because it is utilized to compare two independent groups. However, the permutation test is applicable since we do not assume normality in a permutation test.
+
+First, we can conduct paired t-test as follows:
+
+```{r}
+t.test(data$Before,data$After8weeks, paired=TRUE)
+```
+
+The p-value is 3e-11, so we can know taht $H_0$ can be rejected. $H_0$ means no significant difference between Before and After8weeks. In this case, there is significant difference between Before and After8weeks.
+
+Then, we can use permutation test as follows:
+
+```{r}
+mean_difference = function(x,y) {mean(x-y)}
+
+original_diff <- mean(data$Before - data$After8weeks)
+
+B=1000; tstar=numeric(B)
+
+for (i in 1:B) {
+  md_star=t(apply(cbind(data$Before,data$After8weeks),1,sample))
+  tstar[i]=mean_difference(data$Before,data$After8weeks) 
+}
+
+myt = mean_difference(data$Before,data$After8weeks);myt
+
+pl=sum(tstar<myt)/B
+pr=sum(tstar>myt)/B
+p=2*min(pl,pr); p
+```
+
+In the permutation test, we can reject $H_0$ and the result also demonstrates that the diet with low fat margarine has a significant effect.
+
+**c**
+
+First, we construct the a 97%-CI for $\mu$ based on normality. As $X_1, \ldots, X_{18} \sim N(\mu,\sigma^2)$ , we can calculate the t-confidence interval of level $1-\alpha$ for $\mu$ . Note, $\alpha$ is 3% now.
+
+```{r}
+x = data$After8weeks
+n = length(x)
+x_mean = mean(x)
+x_sd = sd(x) 
+alpha = 0.03
+
+t = qt(1-alpha/2, df = n-1)
+
+CI_normal = c(
+  x_mean - t * (x_sd / sqrt(n)),
+  x_mean + t * (x_sd / sqrt(n))
+)
+cat("Normality 97% confidence interval: [", round(CI_normal[1], 3), 
+    ",", round(CI_normal[2], 3), "]\n")
+```
+
+Then, we implement bootstrap CI as follows:
+
+```{r}
+
+B = 1000
+x_mean = mean(data$After8weeks)
+Tstar = numeric(B)
+for(i in 1:B){
+  Xstar=sample(data$After8weeks,replace=TRUE)
+  Tstar[i]=mean(Xstar)
+}
+Tstar15 = quantile(Tstar, 0.015)
+Tstar985 = quantile(Tstar, 0.985)
+
+CI_bootstrap = c(2*x_mean-Tstar985,2*x_mean-Tstar15)
+cat("Bootstrap 97% confidence interval: [", round(CI_bootstrap[1], 3), 
+    ",", round(CI_bootstrap[2], 3), "]\n")
+
+```
+
+The difference between the two confidence intervals is slight. In my view, this might be because after8weeks conforms to a normal distribution.
+
+**d**
+
+We can use bootstrap method first as follows:
+
+```{r}
+n=length(data$After8weeks) # length
+t=max(data$After8weeks) # the max of samples
+B=1000;
+tstar=numeric(B)
+theta_values = seq(3, 12, by = 0.1)
+
+p_values = sapply(theta_values, function(theta) {
+  tstar = numeric(B)
+  for (i in 1:B){
+    xstar = runif(n, min = 3, max = theta)
+    tstar[i] = max(xstar)
+  }
+  pl = sum(tstar < t) / B
+  pr = sum(tstar > t) / B
+  p = 2 * min(pl, pr)
+  return(p)
+})
+
+# This is to find the range of theta for p > 0.05 
+theta_valid = theta_values[p_values > 0.05]
+
+cat("The range of theta for H0 cannot be rejected: [", min(theta_valid), max(theta_valid),  "]\n")
+
+
+```
+
+In terms of the question: Can the Kolmogorov-Smirnov test be also applied for this question? My answer is no. The value of $\theta$ is not a known fixed value , so the empirical distribution function is not completely known. In this case, it violates one of the assumptions of KS test.
+
+**e**
+
+We can test whether the proportion of samples with cholesterol levels of less than 6 are significantly less than 50% after 8 weeks. We can set the orginal hypothesis $H_0$ : the median is 6, while $H_1$ is median is smaller than 6. The binomial test can be applied as follows:
+
+```{r}
+n = length(data$After8weeks)
+below_6 = sum(data$After8weeks < 6);
+
+binom.test(below_6,n,p=0.5,alt="l")
+```
+
+Besides, we can also implement Wilcoxon signed rank test.
+
+```{r}
+ wilcox.test(data$After8weeks,mu=6)
+```
+
+We can conclude that $H_0$ cannot be rejected, since the p-value is higher than 0.05.
+
+Let's forward to next question: design and perform a test to check whether the fraction of the cholesterol levels after 8 weeks of low fat diet less than 4.5 is at most 25%.
+
+We can set the original hypothesis $H_0$ as the percentage of cholesterol levels below 4.5 is less than 25%, while $H_1$ means the percentage of cholesterol levels below 4.5 is more than or equal to 25%.
+
+```{r}
+below_4.5 = sum(data$After8weeks <= 4.5)
+n = length(data$After8weeks)
+
+# check if percentage of cholesterol levels below 4.5 is greater then 25%
+binom.test(below_4.5,n,p=0.25,alt="greater")
+```
+
+Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is larger than 0.05. We can conclude that the percentage of cholesterol levels below 4.5 is at most 25%.
+
+## Exercise 2
+
+<!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
+
+**(a)**
+
+**ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
+
+```{r}
+df <- read.table("crops.txt", header = TRUE)
+df$County <- as.factor(df$County)
+df$Related <- as.factor(df$Related)
+anova_model <- aov(Crops ~ County + Related + County:Related, data = df) 
+summary(anova_model)
+```
+
+Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. <!--But we can see that the interaction is better.-->
+
+```{r}
+residuals <- resid(anova_model)
+fitted_values <- fitted(anova_model) 
+qqnorm(residuals)
+
+plot(fitted_values, residuals, main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+```
+
+**(b)**
+
+We consider different ANCOVA models:
+
+**Tests the independent effects**
+
+```{r}
+ancova_main <- aov(Crops ~ County + Related + Size, data = df)
+summary(ancova_main)
+```
+
+**Size × County Interaction**
+
+```{r}
+ancova_county_size <- aov(Crops ~ County * Size + Related, data = df)
+summary(ancova_county_size)
+```
+
+**Size × Related Interaction**
+
+```{r}
+ancova_related_size <- aov(Crops ~ County + Related * Size, data = df)
+summary(ancova_related_size)
+```
+
+```{r}
+AIC(ancova_main, ancova_county_size, ancova_related_size)
+```
+
+We can see from p-values that Size × County interaction terms is significant and this model have low AIC,thus we choose Size × County Interaction model.
+
+Significant County (p \< 0.05) → County has a strong effect on Crops.
+
+Significant Size (p \< 0.05) → Farm Size influences Crops.
+
+Significant Related (p \> 0.05) → Relation between landlord and tenant do not affects Crops. **(c)**
+
+**(d)**
+
+```{r}
+new_farm <- data.frame(
+  County = factor(2, levels = c(1, 2, 3)), 
+  Related = factor("yes", levels = c("no", "yes")),
+  Size = 165  
+)
+
+predicted_crops <- predict(ancova_county_size, newdata = new_farm, interval = "confidence")
+print(predicted_crops)
+```
+
+```{r}
+error_variance <- sum(residuals(ancova_county_size)^2) / df.residual(ancova_county_size)
+print(error_variance)
+```
