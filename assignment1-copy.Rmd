@@ -213,25 +213,37 @@ Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is l
 
 <!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
 
-**(a)** Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions **ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
+**(a)** Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions 
+We need to check normality for numeric columns.
+```{r}
+df <- read.table("crops.txt", header = TRUE)
+df$County <- as.factor(df$County)
+df$Related <- as.factor(df$Related)
+
+shapiro.test(df$Crops)
+shapiro.test(df$Size)
+
+```
+We check variance equality using leveneTest before applying anova model.As we can see p>0.05,thus we can apply anova models.
+```{r}
+library(car)
+leveneTest(Crops ~ County, data = df)
+leveneTest(Crops ~ Related, data = df)
+leveneTest(Crops ~ County:Related, data = df)
+```
+
+**ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
 
 **Tests the independent effects**
 
 ```{r}
-df <- read.table("crops.txt", header = TRUE)
-df$County <- as.factor(df$County)
-df$Related <- as.factor(df$Related)
 anova_model1 <- aov(Crops ~ County + Related, data = df) 
 summary(anova_model1)
 ```
-
 **Interaction model**
 
 ```{r}
-df <- read.table("crops.txt", header = TRUE)
-df$County <- as.factor(df$County)
-df$Related <- as.factor(df$Related)
-anova_model2 <- aov(Crops ~ County + Related + County:Related, data = df) 
+anova_model2 <- aov(Crops ~ County*Related, data = df) 
 summary(anova_model2)
 ```
 
@@ -246,6 +258,17 @@ new_farm <- data.frame(
 predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confidence")
 print(predicted_crops)
 ```
+Here we do the post-hoc check using TukeyHSD
+```{r}
+TukeyHSD(anova_model2)
+```
+The Tukey test results confirm that the differences in means are not statistically significant.
+
+<!--```{r}
+#install.packages("car")
+library(car)
+leveneTest(anova_model2)
+```-->
 
 Examining residuals can help assess if the model assumptions hold. We can see that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
 
