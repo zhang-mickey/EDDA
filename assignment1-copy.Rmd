@@ -46,6 +46,8 @@ par(mfrow = c(1,1))
 Then we also plot the scatter figures,we can see that there is approximately linear relation between these two values.
 
 ```{r}
+#length(data$Before)
+#length(data$After8weeks)
 plot(data$Before, data$After8weeks,
      main = "Scatter Plot of Before vs. After 8 Weeks",
      xlab = "Before", ylab = "After 8 Weeks",
@@ -284,20 +286,26 @@ leveneTest(anova_model2)
 
 Examining residuals can help assess if the model assumptions hold. We can see that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
 
-```{r}
-plot(fitted_values1,residuals , main = "Residuals vs. Fitted", 
-     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
-abline(h = 0, col = "red", lty = 2)
-
-```
-
 We can see that residuals are normally distributed.
+
 
 ```{r}
 residuals1 <- resid(anova_model1)
 fitted_values1 <- fitted(anova_model1) 
 qqnorm(residuals1)
 ```
+
+```{r}
+#length(fitted_values1)
+#length(residuals)
+#class(fitted_values1)
+#class(residuals)
+plot(fitted_values1,residuals1 , main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+
+```
+
 
 **(b)** ANOVA models only assumes that crops only depend on categorical factors,put size into perspective, we consider different ANCOVA models:
 
@@ -376,11 +384,13 @@ qqline(residuals, col = "red")
 ```
 
 ```{r}
+#length(fitted_values)
+#length(residuals)
 plot(fitted_values, residuals, 
      main = "Residuals vs Fitted Values", 
      xlab = "Fitted Values", 
      ylab = "Residuals")
-abline(h = 0, col = "red", lty = 2) # Add a horizontal line at 0
+abline(h = 0, col = "red", lty = 2)
 ```
 
 We estimate the error variance.
