@@ -1,8 +1,7 @@
 ---
-title: "Assignment1"
+title: "Group11"
 author: "Yinghao Luo, Zheyuan Zhang, Yujie Cao"
 output: pdf_document
-date: "2025-02-13"
 ---
 
 ```{r setup, include=FALSE}
@@ -16,60 +15,37 @@ knitr::opts_chunk$set(fig.height = 2.5)
 ## Exercise 1
 
 **(a)** <!--Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
---> For question 1a, we created several figures to check the characteristics of the dataset, which include histogram, Q-Q plot. According to the Q-Q plots, we can conclude that the data Before and After both follow a normal distribution, since the plots is approximately on a straight line.From the histogram,we can also make the same conclusion.
+--> We draw several figures to check the characteristics of the dataset. According to the Q-Q plots and from the shape of histogram, we can assume that the data Before and After 8 weeks both follow a normal distribution, since the points are approximately on a straight line,although the sample size is relatively small.Besides,we also check the scale,symmetry and outliers of the dataset through boxplot.
 
 ```{r, echo = FALSE}
 data = read.table('cholesterol.txt', header = TRUE)
 # Before
-par(mfrow = c(1,2))
-hist(data$Before, main="Before", xlab="Cholesterol (mmol/L)", col="lightblue", border="black")
-qqnorm(data$Before, main="Q-Q Plot for Before 8 Weeks")
+par(mfrow = c(1,3))
+hist(data$Before, main="histogram of Before", xlab="Cholesterol (mmol/L)", col="lightblue", border="black")
+qqnorm(data$Before, main="QQ−plot of Before")
 qqline(data$Before, col="red")
-
+boxplot(data$Before, main="boxplot of Before")
 # After
-hist(data$After8weeks, main="After 8 Weeks", xlab="Cholesterol (mmol/L)", col="lightgreen", border="black")
-qqnorm(data$After8weeks, main="Q-Q Plot for After 8 Weeks")
-qqline(data$After8weeks, col="red")
-
-# 
-```
-
-Besides,we also check the scale,symmetry and outliers of the dataset through boxplot.
-
-```{r}
-par(mfrow = c(1,2)) 
-boxplot(data$Before)
-boxplot(data$After8weeks)
-par(mfrow = c(1,1))
+hist(data$After8weeks, main="histogram of After", xlab="Cholesterol (mmol/L)", col="lightgreen", border="black")
+qqnorm(data$After8weeks, main="QQ−plot of After")
+qqline(data$After8weeks, main="After", col="red")
+boxplot(data$After8weeks,main="boxplot of After")
 ```
 
 Then we also plot the scatter figures,we can see that there is approximately linear relation between these two values.
 
-```{r}
-#length(data$Before)
-#length(data$After8weeks)
+```{r, fig.width= 10, fig.height= 4}
 plot(data$Before, data$After8weeks,
      main = "Scatter Plot of Before vs. After 8 Weeks",
      xlab = "Before", ylab = "After 8 Weeks",
      col = "black", pch = 16)
 ```
 
-The correlation of these two columns(Before and After) can also be calculated by Pearson . Therefore, the value of correlation is 0.991, which can infer that they are correlated with each other.
+The correlation of the two columns can also be calculated by Pearson as normality is assumed. The result is that the value of correlation is 0.991, which can infer that there is significant correlation.
 
-```{r}
+**(b)** First,the data are paired as it is an experiment with two numerical outcomes per experimental unit.Therefore, the permutation test is applicable since permutation test is suitable for paired samples. However,Mann-Whitney test is not applicable, because it is utilized to compare two independent samples.
 
-cor.test(data$Before, data$After8weeks, method="pearson")
-
-```
-
-```{=html}
-<!--**(b)** Apply a couple of relevant tests (at least two tests, see Lectures 2–3) to verify whether the diet with low fat margarine has an eﬀect (argue whether the data are paired or not). Is a permutation test applicable? Is the Mann-Whitney test applicable?
--->
-```
-
-To answer the question about if the data are paired or not, the answer is yes. It is an experiment with two numerical outcomes per experimental unit. To be specific, the data are measured at two different time points, but within the same group of indiciduals. Therefore, **Mann-Whitney test is not applicable**, because it is utilized to compare two independent groups. However, the permutation test is applicable since we do not assume normality in a permutation test. As the sample size is 18,relatively small,we prefer non-Parametric tests.
-
-First, we can conduct paired t-test as follows:
+We already know that the data stems from a approximately normal distribution,so we can conduct **paired t-test** as follows:
 
 ```{r}
 t.test(data$Before,data$After8weeks, paired=TRUE)
@@ -77,54 +53,36 @@ t.test(data$Before,data$After8weeks, paired=TRUE)
 
 The p-value is 3e-11, so we can know taht $H_0$ can be rejected. $H_0$ means no significant difference between Before and After8weeks. In this case, there is significant difference between Before and After8weeks.
 
-Then, we can use permutation test as follows:
+Then,as the sample size is 18,relatively small,we prefer non-Parametric tests. we can use **permutation test** as follows: The test statistic we choose is mean difference.
 
 ```{r}
 mean_difference = function(x,y) {mean(x-y)}
-
 original_diff <- mean(data$Before - data$After8weeks)
-
 B=1000; tstar=numeric(B)
-
 for (i in 1:B) {
   md_star=t(apply(cbind(data$Before,data$After8weeks),1,sample))
   tstar[i]=mean_difference(data$Before,data$After8weeks) 
 }
-
-myt = mean_difference(data$Before,data$After8weeks);myt
-
-pl=sum(tstar<myt)/B
-pr=sum(tstar>myt)/B
-p=2*min(pl,pr); p
+myt = mean_difference(data$Before,data$After8weeks);
+pl=sum(tstar<myt)/B;pr=sum(tstar>myt)/B;p=2*min(pl,pr); p
 ```
 
-In the permutation test, we can reject $H_0$ and the result also demonstrates that the diet with low fat margarine has a significant effect.
+In the permutation test, we can reject $H_0$ and conclude that the diet with low fat margarine indeed has a significant effect.
 
-**c**
-
-First, we construct the a 97%-CI for $\mu$ based on normality. As $X_1, \ldots, X_{18} \sim N(\mu,\sigma^2)$ , we can calculate the t-confidence interval of level $1-\alpha$ for $\mu$ . Note, $\alpha$ is 3% now.
+**(c)** First, we construct the a 97%-CI for $\mu$ based on normality. As $X_1, \ldots, X_{18} \sim N(\mu,\sigma^2)$ , we can calculate the t-confidence interval of level $1-\alpha$ for $\mu$.We use mean instead of median as the estimator because the outlier do not exists from conclusion in (a).
 
 ```{r}
-x = data$After8weeks
-n = length(x)
-x_mean = mean(x)
-x_sd = sd(x) 
-alpha = 0.03
-
-t = qt(1-alpha/2, df = n-1)
-
+x = data$After8weeks;n = length(x);x_mean = mean(x);x_sd = sd(x) ;alpha = 0.03;t = qt(1-alpha/2, df = n-1)
 CI_normal = c(
   x_mean - t * (x_sd / sqrt(n)),
-  x_mean + t * (x_sd / sqrt(n))
-)
-cat("Normality 97% confidence interval: [", round(CI_normal[1], 3), 
+  x_mean + t * (x_sd / sqrt(n)))
+cat("97% CI based on normality: [", round(CI_normal[1], 3), 
     ",", round(CI_normal[2], 3), "]\n")
 ```
 
-Then, we implement bootstrap CI as follows:
+Bootstrap CI is an alternative to determine CI's for non-normal sample, we implement bootstrap CI as follows:
 
 ```{r}
-
 B = 1000
 x_mean = mean(data$After8weeks)
 Tstar = numeric(B)
@@ -134,26 +92,22 @@ for(i in 1:B){
 }
 Tstar15 = quantile(Tstar, 0.015)
 Tstar985 = quantile(Tstar, 0.985)
-
 CI_bootstrap = c(2*x_mean-Tstar985,2*x_mean-Tstar15)
-cat("Bootstrap 97% confidence interval: [", round(CI_bootstrap[1], 3), 
+cat("Bootstrap 97% CI: [", round(CI_bootstrap[1], 3), 
     ",", round(CI_bootstrap[2], 3), "]\n")
 
 ```
 
-The difference between the two confidence intervals is slight. In my view, this might be because after8weeks conforms to a normal distribution.
+As bootstrap CI will always yield a diﬀerent interval when repeating,we run the chunk several time. And the conclusion is that the difference between the two confidence intervals is slight. From our perspective, this is be because the column after8weeks data steams form a normal distribution.
 
-**d**
-
-We can use bootstrap method first as follows: The result may be slightly different for each bootstrap test. We choose the maximum of the sample as the test statistic and set B as 1000.
+**(d)** We use the maximum of the sample as the test statistic and set B as 1000 to run the bootstrap test.We repeated the test a few times to see if the result is stable.
 
 ```{r}
-n=length(data$After8weeks) # length
-t=max(data$After8weeks) # the max of samples
+n=length(data$After8weeks) 
+t=max(data$After8weeks)
 B=1000;
 tstar=numeric(B)
 theta_values = seq(3, 12, by = 0.1)
-
 p_values = sapply(theta_values, function(theta) {
   tstar = numeric(B)
   for (i in 1:B){
@@ -165,180 +119,153 @@ p_values = sapply(theta_values, function(theta) {
   p = 2 * min(pl, pr)
   return(p)
 })
-
-# This is to find the range of theta for p > 0.05 
 theta_valid = theta_values[p_values > 0.05]
-
 cat("The range of theta for H0 cannot be rejected: [", min(theta_valid), max(theta_valid),  "]\n")
-
-
 ```
 
-In terms of the question: Can the Kolmogorov-Smirnov test be also applied for this question? My answer is no. The value of $\theta$ is not a known fixed value , so the empirical distribution function is not completely known. In this case, it violates one of the assumptions of KS test.
+Kolmogorov-Smirnov test can not be applied as it aims at two independent samples,but our data is paired.
+<!--Besides,the value of $\theta$ is not a known fixed value , so the empirical distribution function is not completely known. In this case, it violates the assumptions of KS test.-->
 
-**e**
-
-We can test whether the proportion of samples with cholesterol levels of less than 6 are significantly less than 50% after 8 weeks. We can set the orginal hypothesis $H_0$ : the median is 6, while $H_1$ is median is smaller than 6. The binomial test can be applied as follows:
+**(e)** 
+Since we are verifying the median now,the **Sign test** can be applied as follows:
 
 ```{r}
 n = length(data$After8weeks)
 below_6 = sum(data$After8weeks < 6);
-
 binom.test(below_6,n,p=0.5,alt="l")
 ```
-
-Besides, we can also implement Wilcoxon signed rank test.
-
+<!--We can test whether the proportion of samples with cholesterol levels of less than 6 are significantly less than 50% after 8 weeks. We can set the orginal hypothesis $H_0$ : the median is 6, while $H_1$ is median is smaller than 6. -->
+<!--Besides,**Wilcoxon signed rank test** is also applied here.
 ```{r}
  wilcox.test(data$After8weeks,mu=6)
 ```
-
+-->
 We can conclude that $H_0$ cannot be rejected, since the p-value is higher than 0.05.
-
-Let's forward to next question: design and perform a test to check whether the fraction of the cholesterol levels after 8 weeks of low fat diet less than 4.5 is at most 25%.
-
+<!--Let's forward to next question: design and perform a test to check whether the fraction of the cholesterol levels after 8 weeks of low fat diet less than 4.5 is at most 25%.-->
 We can set the original hypothesis $H_0$ as the percentage of cholesterol levels below 4.5 is less than 25%, while $H_1$ means the percentage of cholesterol levels below 4.5 is more than or equal to 25%.
 
 ```{r}
 below_4.5 = sum(data$After8weeks <= 4.5)
 n = length(data$After8weeks)
-
-# check if percentage of cholesterol levels below 4.5 is greater then 25%
-binom.test(below_4.5,n,p=0.25,alt="greater")
+binom.test(below_4.5,n,p=0.25,alt="g")
 ```
-
 Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is larger than 0.05. We can conclude that the percentage of cholesterol levels below 4.5 is at most 25%.
-
 ## Exercise 2
-
 <!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
-
-**(a)** Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions We need to check normality for numeric columns.
-
+**(a)** Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions.For example,we need to check normality for numeric columns.
 ```{r}
 df <- read.table("crops.txt", header = TRUE)
-df$County <- as.factor(df$County)
-df$Related <- as.factor(df$Related)
-
-shapiro.test(df$Crops)
-shapiro.test(df$Size)
-
+df$County <- as.factor(df$County);df$Related <- as.factor(df$Related)
+shapiro.test(df$Crops);shapiro.test(df$Size)
 ```
+From the result,the normaliy is doubtful for Crops.
 
-Since Anova is not robust to outliers,we first need to check if there are outliers.
-
-```{r}
-boxplot(df$Crops)
-```
-
-We check variance equality using leveneTest before applying anova model.As we can see p\>0.05,thus we can apply anova models.
-
+We also check variance equality using leveneTest before applying anova model.As we can see p\>0.05,thus we can apply anova models.
 ```{r}
 library(car)
-leveneTest(Crops ~ County, data = df)
-leveneTest(Crops ~ Related, data = df)
+leveneTest(Crops ~ County, data = df);leveneTest(Crops ~ Related, data = df);
 leveneTest(Crops ~ County:Related, data = df)
 ```
-
-**ANOVA model** There are two main factors:Country and Related,we also include the interaction factor:County+Related.
+**ANOVA model** Without taking Size into account,there are two main factors:Country and Related,we also include the interaction factor:County+Related.
 
 **Tests the independent effects**
 
 ```{r}
-anova_model1 <- aov(Crops ~ County + Related, data = df) 
-summary(anova_model1)
+anova_model1 <- aov(Crops ~ County + Related, data = df) ;summary(anova_model1)
 ```
-
 **Interaction model**
-
 ```{r}
-anova_model2 <- aov(Crops ~ County*Related, data = df) 
-summary(anova_model2)
+anova_model2 <- aov(Crops ~ County*Related, data = df) ;summary(anova_model2)
 ```
-
-Since all p-values are large (≫ 0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. As there is no significance for the interaction model,we choose the pure model to estimate the data.
+Since for both model,all p-values are large (\>0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. As there is no significance for the interaction model,we choose the additive model to estimate the data.
 
 ```{r}
 new_farm <- data.frame(
   County = factor(3, levels = c(1, 2, 3)), 
   Related = factor("no", levels = c("no", "yes"))
 )
-
-predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confidence")
-print(predicted_crops)
+predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confidence");print(predicted_crops)
 ```
+The predicted crop yield for a farm in County 3 with no related factor is 7,760.However,the result may not be trustful.
 
-Here we do the post-hoc check using TukeyHSD
-
+Here we do the post-hoc check using TukeyHSD.
 ```{r}
 TukeyHSD(anova_model2)
 ```
 
 The Tukey test results confirm that the differences in means are not statistically significant.
 
-````{=html}
-<!--```{r}
-#install.packages("car")
-library(car)
-leveneTest(anova_model2)
-```-->
-````
+Examining residuals can help assess if the model assumptions hold. We can see that normality is doubtful for residuals.Also,we can see from the right picture that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
 
-Examining residuals can help assess if the model assumptions hold. We can see that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
-
-We can see that residuals are normally distributed.
-
-
-```{r}
+```{r, fig.width= 10, fig.height= 4}
+par(mfrow = c(1,2)) 
 residuals1 <- resid(anova_model1)
 fitted_values1 <- fitted(anova_model1) 
-qqnorm(residuals1)
-```
-
-```{r}
-#length(fitted_values1)
-#length(residuals)
-#class(fitted_values1)
-#class(residuals)
+qqnorm(residuals1);qqline(residuals1, col="red")
 plot(fitted_values1,residuals1 , main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
 abline(h = 0, col = "red", lty = 2)
-
+par(mfrow = c(1,1)) 
 ```
-
 
 **(b)** ANOVA models only assumes that crops only depend on categorical factors,put size into perspective, we consider different ANCOVA models:
 
-```{r}
-boxplot(df$Size,horizontal = TRUE)
-```
-
 **Tests the independent effects**
-
 ```{r}
-ancova_main <- aov(Crops ~ County + Related + Size, data = df)
-summary(ancova_main)
+ancova_main <- aov(Crops ~ County + Related + Size, data = df);summary(ancova_main)
+```
+We check the model assumptions.Here we can see from the residuals that they are approximately normally distributed.
+```{r, fig.width= 10, fig.height= 4}
+par(mfrow = c(1,2)) 
+residuals_main <- resid(ancova_main)
+fitted_values_main <- fitted(ancova_main) 
+qqnorm(residuals_main);qqline(residuals_main, col="red")
+plot(fitted_values_main,residuals_main , main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+par(mfrow = c(1,1)) 
 ```
 
 **Size × County Interaction**
 
 ```{r}
-ancova_county_size <- aov(Crops ~ County * Size + Related, data = df)
-summary(ancova_county_size)
+ancova_county_size <- aov(Crops ~ County * Size + Related, data = df);summary(ancova_county_size)
+```
+```{r, fig.width= 10, fig.height= 4}
+par(mfrow = c(1,2)) 
+residuals_county_size <- resid(ancova_county_size)
+fitted_values_county_size <- fitted(ancova_county_size) 
+qqnorm(residuals_county_size);qqline(residuals_county_size, col="red")
+plot(fitted_values_county_size,residuals_county_size , main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+par(mfrow = c(1,1)) 
 ```
 
 **Size × Related Interaction**
 
 ```{r}
-ancova_related_size <- aov(Crops ~ County + Related * Size, data = df)
-summary(ancova_related_size)
+ancova_related_size <- aov(Crops ~ County + Related * Size, data = df);summary(ancova_related_size)
 ```
-
-```{r}
+```{r, fig.width= 10, fig.height= 4}
+par(mfrow = c(1,2)) 
+residuals_related_size <- resid(ancova_related_size)
+fitted_values_related_size <- fitted(ancova_related_size) 
+qqnorm(residuals_related_size);qqline(residuals_related_size, col="red")
+plot(fitted_values_related_size,residuals_related_size , main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+par(mfrow = c(1,1)) 
+```
+<!--```{r}
 AIC(ancova_main, ancova_county_size, ancova_related_size)
+```-->
+```{r}
+shapiro.test(residuals(ancova_main));shapiro.test(residuals(ancova_related_size))
+shapiro.test(residuals(ancova_county_size))
 ```
-
-We can see from p-values that Size × County interaction terms is significant and this model have low AIC,thus we choose Size × County Interaction model.
+We can see from p-values that Size × County interaction model has the lowest Residual Sum of Squares,from QQplot the normaliry is doubtful.
+But using Shapiro-Wilk normality test suggests that normality assumption holdsl.Thus we choose the  Size × County interaction model.
 
 **(c)** We can review the ANCOVA Model Results.
 
@@ -367,35 +294,124 @@ new_farm <- data.frame(
   Related = factor("yes", levels = c("no", "yes")),
   Size = 165  
 )
-
 predicted_crops <- predict(ancova_county_size, newdata = new_farm, interval = "confidence")
 print(predicted_crops)
-
 ```
 
-We can see that residuals are approximately normally distributed.
-
-```{r}
+<!--```{r, fig.width= 10, fig.height= 4}
+par(mfrow = c(1,2)) 
 
 residuals <- resid(ancova_county_size)
 fitted_values <- fitted(ancova_county_size) 
 qqnorm(residuals)
 qqline(residuals, col = "red")
-```
 
-```{r}
-#length(fitted_values)
-#length(residuals)
 plot(fitted_values, residuals, 
      main = "Residuals vs Fitted Values", 
      xlab = "Fitted Values", 
      ylab = "Residuals")
 abline(h = 0, col = "red", lty = 2)
 ```
-
+-->
 We estimate the error variance.
-
 ```{r}
 error_variance <- sum(residuals(ancova_county_size)^2) / df.residual(ancova_county_size)
 print(error_variance)
+```
+
+## Exercise 3
+
+**(a)**
+```{r}
+library(MASS)
+blocks = rep(1:6, each = 4)
+
+random_N = unlist(tapply(rep(c(1, 1, 0, 0), 6), blocks, sample))  
+random_P = unlist(tapply(rep(c(1, 1, 0, 0), 6), blocks, sample))
+random_K = unlist(tapply(rep(c(1, 1, 0, 0), 6), blocks, sample))
+
+N_matrix <- matrix(random_N, nrow = 6, byrow = TRUE)
+P_matrix <- matrix(random_P, nrow = 6, byrow = TRUE)
+K_matrix <- matrix(random_K, nrow = 6, byrow = TRUE)
+
+random_result = cbind(blocks, N_matrix, P_matrix, K_matrix)
+colnames(random_result) <- c("Block", "N1", "N2", "N3", "N4", 
+                             "P1", "P2", "P3", "P4", "K1", "K2", "K3", "K4")
+
+random_result
+```
+
+**(b)** By generating the **interaction plot**, we can know that the mean yield of blocks using N is always higher than the blocks without using N. 
+<!--To be specific, we can also discover that the yield variance in block 1 and block 4 are the largest, while the yield of using N in block 5 is only slightly higher than without using N. This can imply that, other two additives might also have influence on the yield.-->
+As interaction shows up as nonparallel curves,it looks like interaction seems to be not present.
+```{r, fig.width= 6, fig.height= 3}
+interaction.plot(npk$block, npk$N, npk$yield, xlab = 'Block', ylab = "Yield", 
+trace.label = "N", col = c("red", "blue"), 
+main = "The influence of using N or not on yield")
+```
+
+**(c)** First we look at the boxplot.
+```{r, fig.width=5, fig.height=5}
+par(mfrow = c(1,2))
+boxplot(npk$yield~npk$block);boxplot(npk$yield~npk$N);
+```
+From the interaction, we can observe that the lines seem parallel, so interaction might be no present.
+
+```{r, fig.width= 12, fig.height= 4}
+par(mfrow = c(1,2))
+interaction.plot(npk$block, npk$N, npk$yield);interaction.plot(npk$N, npk$block, npk$yield)
+```
+
+```{r}
+npk$block = as.factor(npk$block); npk$N = as.factor(npk$N); 
+npkaov = lm(yield~block*N, data=npk);anova(npkaov)
+```
+
+According to the result, there is no evidence for interaction between block and N, since the p-value of it is 0.48(\> 0.05). As the result of no interaction, we can remove interaction term from the model and fit the additive model.
+
+```{r}
+npk$block = as.factor(npk$block); npk$N = as.factor(npk$N); 
+npkaov = lm(yield~block+N, data=npk);anova(npkaov)
+```
+
+Then we can observe the p-value of each factor, it is known that both factors have a main effect in the additive model, since the p-values are smaller than 0.05.
+
+We check the model assumptions.The Q-Q plot shows the normality.
+
+```{r, fig.width=10, fig.height=5}
+par(mfrow = c(1,2))
+qqnorm(residuals(npkaov)); plot(fitted(npkaov),residuals(npkaov))
+```
+
+The inclusion of Block factor is sensible for this model,because the block effect is significant in both models (p \< 0.05 ), which means that different blocks have different average yields.
+
+In this scenario,it's not suitable to use Friedman test,as from the dataset we can see that it is a replicated Complete Block Design(N\>1).But actually we can do the aggregrate operation to meet the requirement.
+
+**(d)** From the results, we can know the pair values of each pair are all higher than 0.05, which means that there is no evidence for interaction in this pairs (N:block, P:block and K:block). Here, we can see N, K and block all present main effects, but we still cannot conclude this now.
+
+```{r}
+model_N_block <- lm(yield ~ N * block + P + K, data = npk)
+model_P_block <- lm(yield ~ P * block + N + K, data = npk)
+model_K_block <- lm(yield ~ K * block + N + P, data = npk)
+anova(model_N_block);anova(model_P_block);anova(model_K_block)
+```
+
+```{r}
+additive_model <- lm(npk$yield ~ npk$N + npk$block + npk$P + npk$K)
+anova(additive_model)
+```
+Therefore,we can conclude that P, K and block present significant effects in additive model, while P has no main effect in the additive model. Because in the first anova test, we cannot see interaction in each pair, so the  additive model is better than the previous model with interaction terms.
+
+**(e)** According to the results in **d**, we know P and K has the main effects in the model. The combination of P and K can contribute to the yield most.
+
+**f** Our main question of interest is whether nitrogen *N* has an eﬀect on *yield*. The mixed model processes the block variable as a random eﬀect. Then, we shouldn create a model without N factor. Therefore, the Pr(\>Chisq) is 0.0012, which means that the effect of N factor is significant. The results are the same as the fixed model.
+```{r}
+library(lme4)
+mixed_model <- lmer(npk$yield ~ npk$N + npk$P + npk$K + (1|npk$block), REML=FALSE)
+summary(mixed_model)
+```
+
+```{r}
+mixed_without_N <- lmer(npk$yield ~ npk$P + npk$K + (1|npk$block), REML=FALSE)
+anova(mixed_model, mixed_without_N)
 ```
