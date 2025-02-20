@@ -72,7 +72,8 @@ In the permutation test, we can reject $H_0$ and conclude that the diet with low
 **(c)** First, we construct the a 97%-CI for $\mu$ based on normality. As $X_1, \ldots, X_{18} \sim N(\mu,\sigma^2)$ , we can calculate the t-confidence interval of level $1-\alpha$ for $\mu$.We use mean instead of median as the estimator because the outlier do not exists from conclusion in (a).
 
 ```{r}
-x = data$After8weeks;n = length(x);x_mean = mean(x);x_sd = sd(x) ;alpha = 0.03;t = qt(1-alpha/2, df = n-1)
+x = data$After8weeks;n = length(x);x_mean = mean(x);x_sd = sd(x) ;
+alpha = 0.03;t = qt(1-alpha/2, df = n-1)
 CI_normal = c(
   x_mean - t * (x_sd / sqrt(n)),
   x_mean + t * (x_sd / sqrt(n)))
@@ -83,15 +84,12 @@ cat("97% CI based on normality: [", round(CI_normal[1], 3),
 Bootstrap CI is an alternative to determine CI's for non-normal sample, we implement bootstrap CI as follows:
 
 ```{r}
-B = 1000
-x_mean = mean(data$After8weeks)
-Tstar = numeric(B)
+B = 1000;x_mean = mean(data$After8weeks);Tstar = numeric(B)
 for(i in 1:B){
   Xstar=sample(data$After8weeks,replace=TRUE)
   Tstar[i]=mean(Xstar)
 }
-Tstar15 = quantile(Tstar, 0.015)
-Tstar985 = quantile(Tstar, 0.985)
+Tstar15 = quantile(Tstar, 0.015);Tstar985 = quantile(Tstar, 0.985)
 CI_bootstrap = c(2*x_mean-Tstar985,2*x_mean-Tstar15)
 cat("Bootstrap 97% CI: [", round(CI_bootstrap[1], 3), 
     ",", round(CI_bootstrap[2], 3), "]\n")
@@ -105,8 +103,7 @@ As bootstrap CI will always yield a diﬀerent interval when repeating,we run th
 ```{r}
 n=length(data$After8weeks) 
 t=max(data$After8weeks)
-B=1000;
-tstar=numeric(B)
+B=1000;tstar=numeric(B)
 theta_values = seq(3, 12, by = 0.1)
 p_values = sapply(theta_values, function(theta) {
   tstar = numeric(B)
@@ -114,13 +111,12 @@ p_values = sapply(theta_values, function(theta) {
     xstar = runif(n, min = 3, max = theta)
     tstar[i] = max(xstar)
   }
-  pl = sum(tstar < t) / B
-  pr = sum(tstar > t) / B
+  pl = sum(tstar < t) / B;pr = sum(tstar > t) / B
   p = 2 * min(pl, pr)
   return(p)
 })
 theta_valid = theta_values[p_values > 0.05]
-cat("The range of theta for H0 cannot be rejected: [", min(theta_valid), max(theta_valid),  "]\n")
+cat("For H0 cannot be rejected: [", min(theta_valid), max(theta_valid),  "]\n")
 ```
 
 Kolmogorov-Smirnov test can not be applied as it aims at two independent samples,but our data is paired.
@@ -130,8 +126,7 @@ Kolmogorov-Smirnov test can not be applied as it aims at two independent samples
 Since we are verifying the median now,the **Sign test** can be applied as follows:
 
 ```{r}
-n = length(data$After8weeks)
-below_6 = sum(data$After8weeks < 6);
+n = length(data$After8weeks);below_6 = sum(data$After8weeks < 6);
 binom.test(below_6,n,p=0.5,alt="l")
 ```
 <!--We can test whether the proportion of samples with cholesterol levels of less than 6 are significantly less than 50% after 8 weeks. We can set the orginal hypothesis $H_0$ : the median is 6, while $H_1$ is median is smaller than 6. -->
@@ -145,8 +140,7 @@ We can conclude that $H_0$ cannot be rejected, since the p-value is higher than 
 We can set the original hypothesis $H_0$ as the percentage of cholesterol levels below 4.5 is less than 25%, while $H_1$ means the percentage of cholesterol levels below 4.5 is more than or equal to 25%.
 
 ```{r}
-below_4.5 = sum(data$After8weeks <= 4.5)
-n = length(data$After8weeks)
+below_4.5 = sum(data$After8weeks <= 4.5);n = length(data$After8weeks)
 binom.test(below_4.5,n,p=0.25,alt="g")
 ```
 Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is larger than 0.05. We can conclude that the percentage of cholesterol levels below 4.5 is at most 25%.
@@ -404,14 +398,14 @@ Therefore,we can conclude that P, K and block present significant effects in add
 
 **(e)** According to the results in **d**, we know P and K has the main effects in the model. The combination of P and K can contribute to the yield most.
 
-**f** Our main question of interest is whether nitrogen *N* has an eﬀect on *yield*. The mixed model processes the block variable as a random eﬀect. Then, we shouldn create a model without N factor. Therefore, the Pr(\>Chisq) is 0.0012, which means that the effect of N factor is significant. The results are the same as the fixed model.
+**f** Our main question of interest is whether nitrogen *N* has an eﬀect on *yield*. The mixed model processes the block variable as a random eﬀect. 
 ```{r}
 library(lme4)
-mixed_model <- lmer(npk$yield ~ npk$N + npk$P + npk$K + (1|npk$block), REML=FALSE)
+mixed_model <- lmer(yield ~ N + P + K + (1|block), REML=FALSE,data=npk)
 summary(mixed_model)
 ```
-
+Then,we create a model without factor N and test the model inside the full one. Therefore, the Pr(\>Chisq) is 0.0012, which means that the effect of N factor is significant. The results are the same as the fixed model.
 ```{r}
-mixed_without_N <- lmer(npk$yield ~ npk$P + npk$K + (1|npk$block), REML=FALSE)
+mixed_without_N <- lmer(yield ~ P + K + (1|block), REML=FALSE,data=npk)
 anova(mixed_model, mixed_without_N)
 ```
