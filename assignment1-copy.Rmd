@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # only round 3
 options(digits = 3)
 
+knitr::opts_chunk$set(fig.show='hold')
 knitr::opts_chunk$set(fig.height = 2.5)
 ```
 
@@ -17,7 +18,7 @@ knitr::opts_chunk$set(fig.height = 2.5)
 **(a)** <!--Make some relevant plots of this data set, comment on normality. Investigate whether the columns Before and After8weeks are correlated.
 --> We draw several figures to check the characteristics of the dataset. According to the Q-Q plots and from the shape of histogram, we can assume that the data Before and After 8 weeks both follow a normal distribution, since the points are approximately on a straight line,although the sample size is relatively small.Besides,we also check the scale,symmetry and outliers of the dataset through boxplot.
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.width= 10, fig.height= 3}
 data = read.table('cholesterol.txt', header = TRUE)
 # Before
 par(mfrow = c(1,3))
@@ -34,7 +35,7 @@ boxplot(data$After8weeks,main="boxplot of After")
 
 Then we also plot the scatter figures,we can see that there is approximately linear relation between these two values.
 
-```{r, fig.width= 10, fig.height= 4}
+```{r, fig.width= 10, fig.height= 3}
 plot(data$Before, data$After8weeks,
      main = "Scatter Plot of Before vs. After 8 Weeks",
      xlab = "Before", ylab = "After 8 Weeks",
@@ -119,47 +120,56 @@ theta_valid = theta_values[p_values > 0.05]
 cat("For H0 cannot be rejected: [", min(theta_valid), max(theta_valid),  "]\n")
 ```
 
-Kolmogorov-Smirnov test can not be applied as it aims at two independent samples,but our data is paired.
-<!--Besides,the value of $\theta$ is not a known fixed value , so the empirical distribution function is not completely known. In this case, it violates the assumptions of KS test.-->
+Kolmogorov-Smirnov test can not be applied as it aims at two independent samples,but our data is paired. <!--Besides,the value of $\theta$ is not a known fixed value , so the empirical distribution function is not completely known. In this case, it violates the assumptions of KS test.-->
 
-**(e)** 
-Since we are verifying the median now,the **Sign test** can be applied as follows:
+**(e)** Since we are verifying the median now,the **Sign test** can be applied as follows:
 
 ```{r}
 n = length(data$After8weeks);below_6 = sum(data$After8weeks < 6);
 binom.test(below_6,n,p=0.5,alt="l")
 ```
+
 <!--We can test whether the proportion of samples with cholesterol levels of less than 6 are significantly less than 50% after 8 weeks. We can set the orginal hypothesis $H_0$ : the median is 6, while $H_1$ is median is smaller than 6. -->
+
+````{=html}
 <!--Besides,**Wilcoxon signed rank test** is also applied here.
 ```{r}
  wilcox.test(data$After8weeks,mu=6)
 ```
 -->
-We can conclude that $H_0$ cannot be rejected, since the p-value is higher than 0.05.
-<!--Let's forward to next question: design and perform a test to check whether the fraction of the cholesterol levels after 8 weeks of low fat diet less than 4.5 is at most 25%.-->
-We can set the original hypothesis $H_0$ as the percentage of cholesterol levels below 4.5 is less than 25%, while $H_1$ means the percentage of cholesterol levels below 4.5 is more than or equal to 25%.
+````
+
+We can conclude that $H_0$ cannot be rejected, since the p-value is higher than 0.05. <!--Let's forward to next question: design and perform a test to check whether the fraction of the cholesterol levels after 8 weeks of low fat diet less than 4.5 is at most 25%.--> We can set the original hypothesis $H_0$ as the percentage of cholesterol levels below 4.5 is less than 25%, while $H_1$ means the percentage of cholesterol levels below 4.5 is more than or equal to 25%.
 
 ```{r}
 below_4.5 = sum(data$After8weeks <= 4.5);n = length(data$After8weeks)
 binom.test(below_4.5,n,p=0.25,alt="g")
 ```
+
 Therefore, we cannot reject the original hypothesis $H_0$ since the p-value is larger than 0.05. We can conclude that the percentage of cholesterol levels below 4.5 is at most 25%.
+
 ## Exercise 2
+
 <!-- column Crops contains the value of crops, column Size the size of farm, column County the county and column Related reflects the fact whether landlord and tenant are related-->
+
 **(a)** Before we perform relevant ANOVA models,we need to check whether the data meets the necessary assumptions.For example,we need to check normality for numeric columns.
+
 ```{r}
 df <- read.table("crops.txt", header = TRUE)
 df$County <- as.factor(df$County);df$Related <- as.factor(df$Related)
 shapiro.test(df$Crops);shapiro.test(df$Size)
 ```
+
 From the result,the normaliy is doubtful for Crops.
 
 We also check variance equality using leveneTest before applying anova model.As we can see p\>0.05,thus we can apply anova models.
+
 ```{r}
 library(car)
 leveneTest(Crops ~ County, data = df);leveneTest(Crops ~ Related, data = df);
 leveneTest(Crops ~ County:Related, data = df)
 ```
+
 **ANOVA model** Without taking Size into account,there are two main factors:Country and Related,we also include the interaction factor:County+Related.
 
 **Tests the independent effects**
@@ -167,10 +177,13 @@ leveneTest(Crops ~ County:Related, data = df)
 ```{r}
 anova_model1 <- aov(Crops ~ County + Related, data = df) ;summary(anova_model1)
 ```
+
 **Interaction model**
+
 ```{r}
 anova_model2 <- aov(Crops ~ County*Related, data = df) ;summary(anova_model2)
 ```
+
 Since for both model,all p-values are large (\>0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. As there is no significance for the interaction model,we choose the additive model to estimate the data.
 
 ```{r}
@@ -178,11 +191,13 @@ new_farm <- data.frame(
   County = factor(3, levels = c(1, 2, 3)), 
   Related = factor("no", levels = c("no", "yes"))
 )
-predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confidence");print(predicted_crops)
+predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confidence");predicted_crops
 ```
+
 The predicted crop yield for a farm in County 3 with no related factor is 7,760.However,the result may not be trustful.
 
 Here we do the post-hoc check using TukeyHSD.
+
 ```{r}
 TukeyHSD(anova_model2)
 ```
@@ -191,7 +206,7 @@ The Tukey test results confirm that the differences in means are not statistical
 
 Examining residuals can help assess if the model assumptions hold. We can see that normality is doubtful for residuals.Also,we can see from the right picture that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
 
-```{r, fig.width= 10, fig.height= 4}
+```{r, fig.width= 10, fig.height= 3}
 par(mfrow = c(1,2)) 
 residuals1 <- resid(anova_model1)
 fitted_values1 <- fitted(anova_model1) 
@@ -199,17 +214,19 @@ qqnorm(residuals1);qqline(residuals1, col="red")
 plot(fitted_values1,residuals1 , main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
 abline(h = 0, col = "red", lty = 2)
-par(mfrow = c(1,1)) 
 ```
 
 **(b)** ANOVA models only assumes that crops only depend on categorical factors,put size into perspective, we consider different ANCOVA models:
 
 **Tests the independent effects**
+
 ```{r}
 ancova_main <- aov(Crops ~ County + Related + Size, data = df);summary(ancova_main)
 ```
+
 We check the model assumptions.Here we can see from the residuals that they are approximately normally distributed.
-```{r, fig.width= 10, fig.height= 4}
+
+```{r, fig.width= 10, fig.height= 3}
 par(mfrow = c(1,2)) 
 residuals_main <- resid(ancova_main)
 fitted_values_main <- fitted(ancova_main) 
@@ -217,15 +234,15 @@ qqnorm(residuals_main);qqline(residuals_main, col="red")
 plot(fitted_values_main,residuals_main , main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
 abline(h = 0, col = "red", lty = 2)
-par(mfrow = c(1,1)) 
 ```
 
-**Size × County Interaction**
+The interaction of Size X county
 
 ```{r}
 ancova_county_size <- aov(Crops ~ County * Size + Related, data = df);summary(ancova_county_size)
 ```
-```{r, fig.width= 10, fig.height= 4}
+
+```{r, fig.width= 10, fig.height= 3}
 par(mfrow = c(1,2)) 
 residuals_county_size <- resid(ancova_county_size)
 fitted_values_county_size <- fitted(ancova_county_size) 
@@ -233,15 +250,15 @@ qqnorm(residuals_county_size);qqline(residuals_county_size, col="red")
 plot(fitted_values_county_size,residuals_county_size , main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
 abline(h = 0, col = "red", lty = 2)
-par(mfrow = c(1,1)) 
 ```
 
-**Size × Related Interaction**
+The interaction of Size X Related
 
 ```{r}
 ancova_related_size <- aov(Crops ~ County + Related * Size, data = df);summary(ancova_related_size)
 ```
-```{r, fig.width= 10, fig.height= 4}
+
+```{r, fig.width= 10, fig.height= 2.5}
 par(mfrow = c(1,2)) 
 residuals_related_size <- resid(ancova_related_size)
 fitted_values_related_size <- fitted(ancova_related_size) 
@@ -249,29 +266,26 @@ qqnorm(residuals_related_size);qqline(residuals_related_size, col="red")
 plot(fitted_values_related_size,residuals_related_size , main = "Residuals vs. Fitted", 
      xlab = "Fitted Values", ylab = "Residuals", pch = 19)
 abline(h = 0, col = "red", lty = 2)
-par(mfrow = c(1,1)) 
 ```
+
+````{=html}
 <!--```{r}
 AIC(ancova_main, ancova_county_size, ancova_related_size)
 ```-->
+````
+
 ```{r}
-shapiro.test(residuals(ancova_main));shapiro.test(residuals(ancova_related_size))
+shapiro.test(residuals(ancova_main));shapiro.test(residuals(ancova_related_size));
 shapiro.test(residuals(ancova_county_size))
 ```
-We can see from p-values that Size × County interaction model has the lowest Residual Sum of Squares,from QQplot the normaliry is doubtful.
-But using Shapiro-Wilk normality test suggests that normality assumption holdsl.Thus we choose the  Size × County interaction model.
+
+We can see from p-values that Size × County interaction model has the lowest Residual Sum of Squares,from QQplot the normality is doubtful. But using Shapiro-Wilk normality test suggests that normality assumption holds.Thus we choose the Size × County interaction model.
 
 **(c)** We can review the ANCOVA Model Results.
 
-Significant County (p \< 0.05) → County influences on Crops,meaning crop yields differ across counties..
+Significant County (p \< 0.05) → County influences on Crops,meaning crop yields differ across counties. Significant Size (p \< 0.05) → Farm Size has a strong effect on Crops,which makes sense—larger farms generally produce more. Significant Related (p \> 0.05) → Whether the landlord and tenant are related does not significantly impact the crops. Significant County × Size (p \< 0.05) → This suggests that the effect of farm size on crop yield depends on the county. The figure blow confirms this conclusion,as the slopes are different.
 
-Significant Size (p \< 0.05) → Farm Size has a strong effect on Crops,which makes sense—larger farms generally produce more.
-
-Significant Related (p \> 0.05) → Whether the landlord and tenant are related does not significantly impact the crops.
-
-Significant County × Size (p \< 0.05) → This suggests that the effect of farm size on crop yield depends on the county. The figure blow confirms this conclusion,as the slopes are different.
-
-```{r}
+```{r, echo=FALSE, fig.width= 10, fig.height= 2, message=FALSE}
 library(ggplot2)
 ggplot(df, aes(x = Size, y = Crops, color = County)) +
   geom_point() +
@@ -289,9 +303,10 @@ new_farm <- data.frame(
   Size = 165  
 )
 predicted_crops <- predict(ancova_county_size, newdata = new_farm, interval = "confidence")
-print(predicted_crops)
+predicted_crops
 ```
 
+````{=html}
 <!--```{r, fig.width= 10, fig.height= 4}
 par(mfrow = c(1,2)) 
 
@@ -307,15 +322,19 @@ plot(fitted_values, residuals,
 abline(h = 0, col = "red", lty = 2)
 ```
 -->
+````
+
 We estimate the error variance.
+
 ```{r}
 error_variance <- sum(residuals(ancova_county_size)^2) / df.residual(ancova_county_size)
-print(error_variance)
+error_variance
 ```
 
 ## Exercise 3
 
 **(a)**
+
 ```{r}
 library(MASS)
 blocks = rep(1:6, each = 4)
@@ -331,28 +350,28 @@ K_matrix <- matrix(random_K, nrow = 6, byrow = TRUE)
 random_result = cbind(blocks, N_matrix, P_matrix, K_matrix)
 colnames(random_result) <- c("Block", "N1", "N2", "N3", "N4", 
                              "P1", "P2", "P3", "P4", "K1", "K2", "K3", "K4")
-
 random_result
 ```
 
-**(b)** By generating the **interaction plot**, we can know that the mean yield of blocks using N is always higher than the blocks without using N. 
-<!--To be specific, we can also discover that the yield variance in block 1 and block 4 are the largest, while the yield of using N in block 5 is only slightly higher than without using N. This can imply that, other two additives might also have influence on the yield.-->
-As interaction shows up as nonparallel curves,it looks like interaction seems to be not present.
-```{r, fig.width= 6, fig.height= 3}
+**(b)** By generating the **interaction plot**, we can know that the mean yield of blocks using N is always higher than the blocks without using N. <!--To be specific, we can also discover that the yield variance in block 1 and block 4 are the largest, while the yield of using N in block 5 is only slightly higher than without using N. This can imply that, other two additives might also have influence on the yield.--> As interaction shows up as nonparallel curves,it looks like interaction seems to be not present.
+
+```{r, fig.width= 6, fig.height= 2.5}
 interaction.plot(npk$block, npk$N, npk$yield, xlab = 'Block', ylab = "Yield", 
 trace.label = "N", col = c("red", "blue"), 
 main = "The influence of using N or not on yield")
 ```
 
 **(c)** First we look at the boxplot.
-```{r, fig.width=5, fig.height=5}
-par(mfrow = c(1,2))
+
+```{r, fig.width=6, fig.height=2.5}
+par(mfrow = c(1,2), mar = c(2, 3, 2, 1))
 boxplot(npk$yield~npk$block);boxplot(npk$yield~npk$N);
 ```
+
 From the interaction, we can observe that the lines seem parallel, so interaction might be no present.
 
-```{r, fig.width= 12, fig.height= 4}
-par(mfrow = c(1,2))
+```{r, fig.width= 12, fig.height= 3}
+par(mfrow = c(1,2), mar = c(3, 3, 2, 1))
 interaction.plot(npk$block, npk$N, npk$yield);interaction.plot(npk$N, npk$block, npk$yield)
 ```
 
@@ -372,7 +391,7 @@ Then we can observe the p-value of each factor, it is known that both factors ha
 
 We check the model assumptions.The Q-Q plot shows the normality.
 
-```{r, fig.width=10, fig.height=5}
+```{r, fig.width=10, fig.height=3}
 par(mfrow = c(1,2))
 qqnorm(residuals(npkaov)); plot(fitted(npkaov),residuals(npkaov))
 ```
@@ -394,17 +413,21 @@ anova(model_N_block);anova(model_P_block);anova(model_K_block)
 additive_model <- lm(npk$yield ~ npk$N + npk$block + npk$P + npk$K)
 anova(additive_model)
 ```
-Therefore,we can conclude that P, K and block present significant effects in additive model, while P has no main effect in the additive model. Because in the first anova test, we cannot see interaction in each pair, so the  additive model is better than the previous model with interaction terms.
 
-**(e)** According to the results in **d**, we know P and K has the main effects in the model. The combination of P and K can contribute to the yield most.
+Therefore,we can conclude that P, K and block present significant effects in additive model, while P has no main effect in the additive model. Because in the first anova test, we cannot see interaction in each pair, so the additive model is better than the previous model with interaction terms.
 
-**f** Our main question of interest is whether nitrogen *N* has an eﬀect on *yield*. The mixed model processes the block variable as a random eﬀect. 
+**(e)** According to the results in **d**, we know N and K has the main effects in the additive model, because the p-value of N and K are both lower than 0.05 . Hence, we can conclude that the combination of N and K can contribute to the yield most.
+
+**(f)** Our main question of interest is whether nitrogen *N* has an eﬀect on *yield*. The mixed model processes the block variable as a random eﬀect.
+
 ```{r}
 library(lme4)
 mixed_model <- lmer(yield ~ N + P + K + (1|block), REML=FALSE,data=npk)
 summary(mixed_model)
 ```
+
 Then,we create a model without factor N and test the model inside the full one. Therefore, the Pr(\>Chisq) is 0.0012, which means that the effect of N factor is significant. The results are the same as the fixed model.
+
 ```{r}
 mixed_without_N <- lmer(yield ~ P + K + (1|block), REML=FALSE,data=npk)
 anova(mixed_model, mixed_without_N)
