@@ -1,5 +1,5 @@
 ---
-title: "Group11"
+title: "Group25"
 author: "Yinghao Luo, Zheyuan Zhang, Yujie Cao"
 output: pdf_document
 ---
@@ -177,6 +177,16 @@ leveneTest(Crops ~ County:Related, data = df)
 ```{r}
 anova_model1 <- aov(Crops ~ County + Related, data = df) ;summary(anova_model1)
 ```
+```{r}
+anova_model2 <- aov(Crops ~ Related, data = df) ;summary(anova_model2)
+```
+
+```{r}
+anova_model3 <- aov(Crops ~ County, data = df) ;summary(anova_model3)
+```
+```{r}
+anova_model4 <- aov(Crops ~ 1, data = df) ;summary(anova_model4)
+```
 
 **Interaction model**
 
@@ -184,7 +194,7 @@ anova_model1 <- aov(Crops ~ County + Related, data = df) ;summary(anova_model1)
 anova_model2 <- aov(Crops ~ County*Related, data = df) ;summary(anova_model2)
 ```
 
-Since for both model,all p-values are large (\>0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. As there is no significance for the interaction model,we choose the additive model to estimate the data.
+Since for both model,all p-values are large (\>0.05), we do not reject the null hypotheses, meaning there is no strong evidence that County or Related significantly impact Crops. As there is no significance for the interaction model,we may choose the additive model to estimate the data.However,these are all the same,thus anva_model4 is best,as no factor included(crazy,meaningless).
 
 ```{r}
 new_farm <- data.frame(
@@ -196,14 +206,14 @@ predicted_crops <- predict(anova_model1, newdata = new_farm, interval = "confide
 
 The predicted crop yield for a farm in County 3 with no related factor is 7,760.However,the result may not be trustful.
 
-Here we do the post-hoc check using TukeyHSD.
+<!--Here we do the post-hoc check using TukeyHSD.-->
 
-```{r}
+<!--```{r}
 TukeyHSD(anova_model2)
-```
-
+```-->
+<!--
 The Tukey test results confirm that the differences in means are not statistically significant.
-
+-->
 Examining residuals can help assess if the model assumptions hold. We can see that normality is doubtful for residuals.Also,we can see from the right picture that it shows non-random pattern,which suggests that the model is not well-fitted and may omit variables.
 
 ```{r, fig.width= 10, fig.height= 3}
@@ -240,6 +250,19 @@ The interaction of Size X county
 
 ```{r}
 ancova_county_size <- aov(Crops ~ County * Size + Related, data = df);summary(ancova_county_size)
+```
+```{r}
+summary.lm(ancova_county_size)
+```
+
+```{r}
+lm_model=lm(Crops ~ County * Size + Related, data = df)
+ancova_county_size_lm <- anova(lm_model);
+ancova_county_size_lm
+```
+
+```{r}
+summary(lm_model)
 ```
 
 ```{r, fig.width= 10, fig.height= 3}
@@ -398,7 +421,7 @@ qqnorm(residuals(npkaov)); plot(fitted(npkaov),residuals(npkaov))
 
 The inclusion of Block factor is sensible for this model,because the block effect is significant in both models (p \< 0.05 ), which means that different blocks have different average yields.
 
-In this scenario,it's not suitable to use Friedman test,as from the dataset we can see that it is a replicated Complete Block Design(N\>1).But actually we can do the aggregrate operation to meet the requirement.
+In this scenario,it's not suitable to use Friedman test,as from the dataset we can see that it is a replicated Complete Block Design(N\>1).Friedman is not vlid for incomplete block design.But actually we can do the aggregrate operation to meet the requirement.
 
 **(d)** From the results, we can know the pair values of each pair are all higher than 0.05, which means that there is no evidence for interaction in this pairs (N:block, P:block and K:block). Here, we can see N, K and block all present main effects, but we still cannot conclude this now.
 

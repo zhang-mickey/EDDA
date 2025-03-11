@@ -8,19 +8,29 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 # only round 3
 options(digits = 3)
-
 knitr::opts_chunk$set(fig.show='hold')
 knitr::opts_chunk$set(fig.height = 2.5)
 ```
 
 ## Exercise 1
 
-**a** In order to conduct linear regression later,we need to check if the dataset meet the model assumption. Histogram and barplot have been generated to illustrate the relationship between PClass, Sex, Age and Survived. From the figures, we can know that people in the 3rd class are the majority with not survived status. The number of males were not survived is much higher than that of females. In terms of the age distribution, we can know that most people living with 20-30 years old survived, while most of them in this age period did not survive.
+**a** In order to conduct linear regression later,we need to explore this dataset to see if it meets the model assumption. First,we make a table to know the survival rate by PClass and Sex.From the table,we do observe that the female have a higher survival rate than male no matters the PClass and the survival rate decreases as the PClass degrades.
+
+Histogram and barplot have been generated to illustrate the distribution of data and the relationship between PClass, Sex, Age and Survival. From the figures, we can know that people in the 3rd class are the majority with not survived status. From the distribution of age,we can assume that the data may not follows normal distribution. <!--The number of males were not survived is much higher than that of females.-->
+
+<!--In terms of the age distribution, we can know that most people living with 20-30 years old survived, while most of them in this age period did not survive.-->
 
 ```{r}
-data = read.table('titanic.txt', header = TRUE)
+data = read.table('titanic.txt', header = TRUE);summary(data)
 table_pclass_survived <- table(data$Survived, data$PClass)
 table_sex_survived <- table(data$Survived, data$Sex)
+```
+
+```{r}
+library(dplyr);survival_rate <- data %>%
+  group_by(PClass, Sex, Survived) %>%
+  summarise(Count = n(), .groups = "drop_last") %>%
+  mutate(Rate = Count / sum(Count)) %>%filter(Survived == 1);survival_rate
 ```
 
 ```{r, echo=FALSE, fig.width= 12, fig.height= 4}
@@ -31,94 +41,129 @@ barplot(table_pclass_survived, beside = TRUE,
         xlab="PClass", ylab="Count", 
         legend.text=c("Not Survived", "Survived"), 
         args.legend=list(title="Survival Status", x="topleft"))
-
 barplot(table_sex_survived, beside = TRUE,
         col=c("blue", "red"), 
-        main="Sex vs Survived", 
-        xlab="Sex", ylab="Count", 
+        main="Sex vs Survived", xlab="Sex", ylab="Count", 
         legend.text=c("Not Survived", "Survived"), 
         args.legend=list(title="Survival Status", x="topleft"))
 
 survived_data <- data[data$Survived == 1, ]
 not_survived_data <- data[data$Survived == 0, ]
-
 hist(survived_data$Age, 
      breaks=seq(0, 80, by=10), 
-     col="red",
-     xlim=c(0, 80), 
+     col="red",xlim=c(0, 80), 
      main="Age Distribution with survival", 
-     xlab="Age", 
-     ylab="Frequency", 
-     border="black")
-
-
+     xlab="Age", ylab="Frequency", border="black")
 hist(not_survived_data$Age, 
      breaks=seq(0, 80, by=10),
-     col="blue",
-     xlim=c(0, 80), 
+     col="blue",xlim=c(0, 80), 
      main="Age Distribution with not survival", 
-     xlab="Age", 
-     ylab="Frequency", 
-     border="black")
+     xlab="Age", ylab="Frequency", border="black")
 ```
 
-According to the results from the logistic regression model, we can see all the variables with p\<0.05, this means all of them have the significant impact on the Survived. Besides, the estimated odds is exp{3.760 - 1.292\*PClass2nd-2.521\*PClass3rd-0.0392\*Age-2.631\*Sexmale}. To be more specific, people in the 2nd class and 3rd class are more likely to not survive compared to 1st class. In addition, people with older age are more likely to not survive. Male is more likely to not survive compared to female.
+<!--Given there are about half of the missing value for age,we need to handle this to use all available information.-->
 
 ```{r}
 titanic_lr_model <- glm(Survived ~ PClass + Age + Sex, data=data, family=binomial)
-summary(titanic_lr_model)
+summary(titanic_lr_model);anova(titanic_lr_model,test="Chisq")
 ```
 
-**b**
+```{=html}
+<!--We verify model assumptions using diagnostic first.Here we plot qqnorm of the residuals and plot those against the fitted values.
+The normal qq-plot of the residuals indicates that an assumption of normality for the errors may not be valid,as the both ends show deviations.The error may be skewed a little bit.The plot of the residuals against the fitted values indicates that the assumption of constant error variance may not be valid also,as there shows a pattern that suggests that the variance of residuals changes with fitted values.-->
+```
 
-In order to test if there is interaction between age and sex, pclass, we can use logistic model and ANCOVA. Therefore, the last p-value is 0.558, which is higher than 0.05. This means that there is no interaction between age and pclass. Besides, according to the last p-value of glm_age_sex, it is smaller than 0.05, which indicates that there is interaction between age and sex.
+````{=html}
+<!--```{r, fig.width= 10, fig.height= 3}
+par(mfrow = c(1,2)) 
+qqnorm(resid(titanic_lr_model))
+qqline(resid(titanic_lr_model),col="red")
+plot(fitted(titanic_lr_model),resid(titanic_lr_model) , main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+```-->
+````
+
+<!--The Shapiro-Wilk test confirms it.-->
+
+````{=html}
+<!--```{r}
+shapiro.test(residuals(titanic_lr_model))
+```-->
+````
+
+As diagnostics for GLM is not needed ,we directly analysis the results. According to the results from the logistic regression model, we can see all the variables with p\<0.05, this means all of them have the significant impact on the Survived.
 
 ```{r}
-glm_age_pclass <- glm(Survived ~ PClass + Age + Sex+ Age:Sex+Age:PClass, data=data, family=binomial)
-anova(glm_age_pclass,test="Chisq")
+log_odds <- coef(titanic_lr_model);odds <- exp(log_odds);odds
+```
 
+Besides, we convert log odds to odds.From the odds perspective, the estimated odds can be calculated using this formula: exp{3.760 - 1.292*PClass2nd-2.521*PClass3rd-0.0392*Age-2.631*Sexmale}.\
+<!--
+To be more specific, people in the 2nd class and 3rd class are more likely to not survive compared to 1st class. In addition, people with older age are more likely to not survive. Male is more likely to not survive compared to female.--> We can see from the result that survival odds decrease significantly as class goes from 1st → 2nd → 3rd.Also,each additional year in age decreases the odds of survival by 4%.Being male significantly decreases the odds of survival,as males have 93% lower odds of survival compared to females.
+
+**b** In order to test if there is interaction between age and sex, pclass, we can use logistic model and ANOVA. As we can see, the p-value of term Age × PClass is 0.558, which means that there is no interaction between age and pclass.The p-value of term Age × Sex it is smaller than 0.05, which indicates that there is interaction between age and sex.Age alone is significant in the basic model but weak when interactions are included and its interaction with Sex is highly significant.
+
+```{r}
 glm_age_sex <- glm(Survived ~ Age * Sex, data=data, family=binomial)
 anova(glm_age_sex,test="Chisq")
+glm_age_pclass <- glm(Survived ~ Age * PClass, data=data, family=binomial)
+anova(glm_age_sex,test="Chisq")
+glm_all <- glm(Survived ~ Age + PClass+Sex+ Age:Sex+Age:PClass, data=data, family=binomial)
+anova(glm_all,test="Chisq")
 ```
 
-After knowing the interaction above, we can determine our model as follows. From p-values, we can know Age and Sexmale are not significant. Since the AIC of this interaction model is lower, we can choose it as our predict model. Then, we can calculate the estimate for the probability of survival for each pair of PClass and Sex for a 55-year-old person.
+After knowing the interaction above and the conclusion of the model form (a), we can determine our model as follows. Since Age:PClass is not significant and Age:Sex is highly significant,we can take Age:Sex into consideration.But is the interaction necessary still need to be checked. We add interaction to have a new model.
 
 ```{r}
-model <- glm(Survived ~ PClass + Age + Sex + Age * Sex, data = data, family=binomial)
+model <- glm(Survived ~ PClass + Age + Sex + Age:Sex, data = data, family=binomial)
 summary(model)
 ```
+
+Here we compare these two model to determine if adding the Age × Sex interaction improves the model.As we can see from the devirance and p-value,the interaction term Age × Sex should be included. <!--From p-values, we can know Age and Sexmale are not significant. --> <!--Since the AIC of this interaction model is lower, we can choose it as our predict model.-->
+```{r}
+anova(titanic_lr_model,model)
+```
+
+However,we observe that add the interaction makes Age and Sexmale insignificant.So we need to revise the model and compare the nested models.As we can see below,if we remove only age ,the model is like the same.If we remove sex,the model will be worse.Since remove age or not almost the same,we choose to remove age to retain only statistically significant predictor without sacrificing model performance.
+
+```{r}
+without_age <- glm(Survived ~ PClass  + Sex+Age:Sex, data = data, family=binomial)
+anova(without_age,model)
+```
+
+```{r}
+without_Sex <- glm(Survived ~ PClass  + Age+Age:Sex, data = data, family=binomial)
+anova(without_Sex,model)
+```
+
+```{r}
+without_age_sex <- glm(Survived ~ PClass + Age:Sex, data = data, family=binomial)
+anova(without_age_sex,model)
+```
+
+Then, we can calculate the estimate for the probability of survival for each pair of PClass and Sex for a 55-year-old person.
 
 ```{r}
 df <- expand.grid(
   PClass = factor(c("1st", "2nd", "3rd"), levels = c("1st", "2nd", "3rd")),
-  Sex = factor(c("female", "male"), levels = c("female", "male")),
-  Age = 55
-)
-
+  Sex = factor(c("female", "male"), levels = c("female", "male")),Age = 55)
 predict_probs <- predict(model, newdata = df, type = "response")
-
-df$Survival_Prob <- predict_probs
-df
+df$Survival_Prob <- predict_probs;df
 ```
 
-**c**
-We can do the prediction using a machine learning based method.We need to split the dataset in order to do quality measure.Category factor also needed to be encoded.
+**c** Since the goal is to predict survival status(0 or 1) and propose a quality measure,we may consider machine learning method,expecially classification model,since it can be seen as a classification task or we can consider survival analysis. As for survival analysis,since there is no time data but time data is needed ,we can treat every passenger has the same time point at t=1 so that in this setup survival analysis turns out to model the probability of survival.In this way,the hazard ratio will function like odds ratio in logistic regression,. In terms of classification model,we first need to encode categorical variables and handling missing value and then split the dataset as train dataset and test dataset to measure the quality of the predictions. As for quality measures,we can use standard binary classification metrics like AUC-ROC,Accuracy, Precision, Recall, and F1-Score can also provide additional insights.
 
-**d**
-
-Since Sex and Survived will generate a 2X2 table, we can use Fisher's exact test. According to the p-values, we can know both PClass and Sex have significant impacts on Survived.
+**d** For PClass and survival,we use chisq.test to build contingency tables. For Sex and Survival, the table will be a 2X2 table, we can use Fisher's exact test. According to the p-values, we can know both PClass and Sex have significant impacts on Survived.
 
 ```{r}
-chisq_PClass <- chisq.test(table_pclass_survived)
-chisq_PClass
-
-chisq_Sex <- fisher.test(table_sex_survived)
-chisq_Sex
+chisq_PClass <- chisq.test(table_pclass_survived);chisq_PClass
+chisq_Sex <- fisher.test(table_sex_survived);chisq_Sex
 ```
 
-**e** The contingency table test in d is not wrong, since it can be used to test the relationship of Survived&PClass and Survive&Sex. The contingency table is an easier way to test if two factors are independent. However, the contingency table can only process categorical data, but not continuous data. In addition, the contingency table cannot predict, it can only test of these two factors are independent.
+**e** The contingency table test in d is not wrong, since it can be used to test the relationship of the category data. It's straightforward to compute and interpret.<!--The contingency table is an easier way to test if two factors are independent.--> However, the contingency table can only process categorical data, but not continuous data.And It cannot control for other variables,as we look at PClass and survival,we do not account for age or gender.In addition, the contingency table cannot predict, it can only test of these two factors are independent.
 
-In terms of logistic regression model, it can simultaneously process multiple variables (more than 2), while contingency table can only involve two variables. It can also discuss the interaction between variables, while contingency tables cannot. However, logistic regression model assumes that there is a linear relationship between the independent and dependent variables. And It requires many data for better predicted results.
+In terms of logistic regression model, it can simultaneously process multiple variables (more than 2), while contingency table can only involve two variables. It can also discuss the interaction between variables, while contingency tables cannot. However, logistic regression model requires model assumptions like it assumes that there is linearity of log-oddds. And It requires many data for better predicted results.
 
 ## Exercise 2
 
@@ -126,102 +171,181 @@ In terms of logistic regression model, it can simultaneously process multiple va
 
 ```{r}
 coups_data = read.table('coups.txt', header = TRUE)
-
-coupsglm = glm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size + numelec + numregim, family = poisson, data = coups_data)
-
-summary(coupsglm)
+coupsglm = glm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size + numelec + numregim, family = poisson, data = coups_data);summary(coupsglm)
 ```
 
-**b** By applying the step down, it is known from the result that only oligarchy, pollib and parties are significant. We can first remove the variable with the largest p-value: numregim. After removing this, we go back to step 2, test all the remaining variables by using the t-test. Then, we remove numelec, size, pctvote and popn sequentially as each summary result shows.
+**b** By applying the step down method, it is known from the result that only oligarchy, pollib and parties are significant. We can first remove the variable with the largest p-value: numelec. After removing this, we go back to step 2, test all the remaining variables by using the t-test. Then, we remove numelec, size, pctvote and popn sequentially as each summary result shows.
 
 ```{r}
-summary(lm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size + numelec + numregim, data = coups_data))
+summary(glm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size + numregim, family = poisson,data = coups_data))
 ```
 
-```{r}
-summary(lm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size + numelec, data = coups_data))
-```
+<!--The variables were sequentially removed starting with numregim (highest p-value), followed by numelec, pctvote, and finally size.-->
 
 ```{r}
-summary(lm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size, data = coups_data))
+summary(glm(miltcoup~oligarchy + pollib + parties + pctvote + popn + size, family = poisson,data = coups_data))
 ```
 
 ```{r}
-summary(lm(miltcoup~oligarchy + pollib + parties + popn + size, data = coups_data))
+summary(glm(miltcoup~oligarchy + pollib + parties + pctvote + popn, family = poisson,data = coups_data))
 ```
 
 ```{r}
-summary(lm(miltcoup~oligarchy + pollib + parties + popn, data = coups_data))
+summary(glm(miltcoup~oligarchy + pollib + parties + pctvote, family = poisson,data = coups_data))
 ```
-
-Finally, after remove the variables by using the step down method, we will get 3 remaining variables, which are all significant. They are oligarchy, pollib and parties.
-
-The step down method shares same results with poisson regression in (a)
 
 ```{r}
-summary(lm(miltcoup~oligarchy + pollib + parties, data = coups_data))
+reduced_model=glm(miltcoup~oligarchy + pollib + parties, family = poisson,data = coups_data);summary(reduced_model)
 ```
+<!--The last variable to remove is size which has the highest p-value.-->
 
-**c**
+<!--Finally, after remove the variables by using the step down method, we will get 3 remaining variables, which are all significant. They are oligarchy, pollib and parties.-->
+```{r}
+anova(coupsglm,reduced_model)
+```
+The model in (a) has 8 predicator,the model after step down retains only statistically significant predictors.It has better performance  as AIC is lower and has avoids unnecessary complexity without sacrificing explanatory power.And we can see the reduced model is sufficient from anova test.
 
-The model we get in (b) is: miltcoup = 1.626 + 0.153 \* oligarchy + 0.042 \* parties - 0.954 \* pollib with R square = 0.513. In this case, we can calculate the average of oligarchy and parties respectively. Then, input them into the predict function. The prediction of each pollib is: The pollib level is 0, the predict result is 3.14. The pollib level is 1, the predict result is 2.19. The pollib level is 2, the predict result is 1.23. We can discover that as the pollib level grows, the miltcoup decreases. It means that number of successful military coups is negatively correlated to political liberalization level.
+**c**  In this case, we can calculate the average of oligarchy and parties respectively. Then, input them into the predict function.We can discover that as the pollib level grows, the miltcoup decreases. It means that number of successful military coups is negatively correlated to political liberalization level,which suggests  political liberalization is a critical factor in reducing coup frequency..
 
 ```{r}
 oligarchy_avg <- mean(coups_data$oligarchy)
 parties_avg <- mean(coups_data$parties)
-
-pollib_levels <- c(0, 1, 2)
-
-
-predictions <- sapply(pollib_levels, function(pollib_value) {
-  miltcoup_pred <- 1.626 + 0.153 * oligarchy_avg  + 0.042 * parties_avg - 0.954 * pollib_value
-  return(miltcoup_pred)
-})
-
-result <- data.frame(Pollib = pollib_levels, Prediction = predictions)
-
-result
-
+new_data <- data.frame(
+  oligarchy = oligarchy_avg,
+  pollib = c(0,1,2),parties = parties_avg)
+predictions <- predict(reduced_model,newdata = new_data)
+result <- data.frame(Pollib = c(0,1,2), Prediction = predictions);result
 ```
 
 ## Exercise 3
 
-From the scatter plots, we can know that weight and viscosity show non-linear relation with Time.
+**a** From the scatter plots, we can know that weight and viscosity show non-linear relation with Time.And T increases with v,decreate with w.v and w are uncorrelated.
 
 ```{r, echo=FALSE, fig.width= 12, fig.height= 4}
 library(MASS)
-data(stormer)
-par(mfrow = c(1,2))
-#plot(stormer$Wt, stormer$time, xlab="Weight", ylab="Time", main="The scatter plot between Weight and Time")
-
-#plot(stormer$Viscosity, stormer$time, xlab="Viscosity", ylab="Time", main="Scatter plot between Viscosity and Time")
-
+data(stormer);par(mfrow = c(1,2))
 pairs(stormer, main="Scatterplot Matrix for Stormer Viscometer Data")
-
-
 ```
+
+We first use linear regression to get approximate initial values for theta1 and theta2.
 
 ```{r}
-stormer_linear = lm(Time ~ Viscosity + Wt, data = stormer)
-
-summary(stormer_linear)
+stormer_linear = lm(Time ~ Viscosity + Wt, data = stormer);summary(stormer_linear)
 ```
+
+Then we apply nonlinear regression to estimate theta1,theta2 and Var of error.We can see that the estimate value of theta1 is 29.401,theta2 is 2.218,which shows that Viscosity and Wt have significant influence on Time.The residual standard error is 6.27.
 
 ```{r}
 form = as.formula(Time ~ theta1 * Viscosity / (Wt - theta2))
 non_linear = nls(form, data = stormer, start = c(theta1=0.622, theta2 = -1.693))
-
-non_linear
+non_linear;summary(non_linear);
 ```
 
+We verify model assumptions first.Here we plot qqnorm of the residuals and plot those against the fitted values. The normal qq-plot of the residuals indicates that an assumption of normality for the errors may not be valid,as there shows a slight S-shape which suggests possible skewness.The normality test also shows violattion of normality. The plot of the residuals against the fitted values indicates that the assumption of constant error variance may not be valid also.
+
+```{r, fig.width= 10, fig.height= 3}
+par(mfrow = c(1,2)) 
+qqnorm(resid(non_linear));qqline(resid(non_linear),col="red")
+plot(fitted(non_linear),resid(non_linear) , main = "Residuals vs. Fitted", 
+     xlab = "Fitted Values", ylab = "Residuals", pch = 19)
+abline(h = 0, col = "red", lty = 2)
+```
+```{r}
+shapiro.test(residuals(non_linear))  
+```
+From the two figures,we can see the model predict the value preety well.But it looks like it's overfitted.
+
 ```{r, echo=FALSE, fig.width= 12, fig.height= 4}
-
 par(mfrow = c(1,2))
-
-plot(stormer$Wt, stormer$time, xlab="Weight", ylab="Time", main="The scatter plot between Weight and Time")
-lines(stormer$Wt, predict(non_linear, newdata = stormer), col="red", lwd=2)
-
-
-plot(stormer$Viscosity, stormer$time, xlab="Viscosity", ylab="Time", main="The scatter plot between Viscosity and Time")
+plot(Time ~ Viscosity, data = stormer, 
+     xlab = "Viscosity", ylab = "Time", main = "Time vs Viscosity")
 lines(stormer$Viscosity, predict(non_linear, newdata = stormer), col="red", lwd=2)
+plot(Time ~ Wt, data = stormer, 
+     xlab = "Weight", ylab = "Time", main = "Time vs Weight")
+lines(stormer$Wt , predict(non_linear, newdata = stormer), col="red", lwd=2)
+```
+
+````{=html}
+<!--```{r}
+library(ggplot2)
+ggplot(stormer, aes(x = Wt, y = Time, color = Viscosity )) +
+  geom_point(size = 3) +
+  labs(title = "Stormer Viscometer: T vs. w, colored by v",
+       x = "Weight (w)", y = "Time (T)") +
+  theme_minimal()
+```-->
+````
+
+````{=html}
+<!--```{r}
+stormer$Predicted_Time <- predict(non_linear)
+
+# Plot actual vs predicted values using ggplot2
+ggplot(stormer, aes(x = Wt, y = Time, color = Viscosity)) +
+  geom_point(size = 3, alpha = 0.6) +  # Scatterplot of observed data
+  geom_line(aes(y = Predicted_Time), color = "red", size = 1.2) +  # Fitted model curve
+  labs(title = "Observed vs Fitted Model for Stormer Viscometer",
+       x = "Weight (Wt)", y = "Time (T)",
+       color = "Viscosity") +
+  theme_minimal()
+```-->
+````
+
+**b** We compute test statistics first and do the test. From the p-value we can reject the null hypothesis.
+
+```{r}
+theta1_estimate <- coef(non_linear)["theta1"]
+theta1_se <- summary(non_linear)$coefficients["theta1", "Std. Error"]
+t_stat <- (theta1_estimate - 25) / theta1_se
+p_value <- 2 * pt(-abs(t_stat), df=df.residual(non_linear));p_value
+```
+
+**c** We compute the CI directly as the confint model are not symmetric around. <!--confint(non_linear,level=0.92,method="asymptotic")-->
+
+```{r}
+theta_hat <- coef(non_linear);cov_matrix=vcov(non_linear);se=sqrt(diag(cov_matrix))
+lb=theta_hat-qnorm(0.96)*se;ub=theta_hat+qnorm(0.96)*se
+ci=cbind(lb,ub);rownames(ci)=names(theta_hat);ci
+```
+
+**d** we generate predictions with confidence intervals using delta method.
+
+```{r,echo=FALSE, fig.width= 12, fig.height= 4}
+v_grid <- seq(10, 300, length.out = 10);w_fixed <- 50 
+
+f_v_theta <- function(v, theta) {
+  theta["theta1"] * v / (w_fixed - theta["theta2"])}# Function for prediction
+T_pred <- f_v_theta(v_grid, theta_hat)
+grad_f <- function(v, theta) {
+  c(v / (w_fixed - theta["theta2"]),     # Partial derivative w.r.t. theta1
+    -theta["theta1"] * v / (w_fixed - theta["theta2"])^2)  # w.r.t. theta2
+}
+se_T <- sapply(v_grid, function(v) {
+  grad_vec <- grad_f(v, theta_hat)  # Gradient vector
+  sqrt(t(grad_vec) %*% vcov(non_linear)%*% grad_vec)  # Standard error
+})
+alpha <- 0.06  # 94% CI, so 1 - alpha = 0.94
+t_crit <- qt(1 - alpha / 2, df = length(stormer$Time) - length(theta_hat))  # t-value
+lower_bound <- T_pred - t_crit * se_T
+upper_bound <- T_pred + t_crit * se_T
+# Plot predictions and confidence intervals
+plot(v_grid, T_pred, type="l", lwd=0.5, col="red",
+     xlab="Viscosity", ylab="Time", 
+     main="Predicted Values:94% Confidence Interval")
+polygon(c(v_grid, rev(v_grid)), c(lower_bound, rev(upper_bound)), 
+        col=rgb(0.7, 0.7, 0.7, 0.5), border=NA)
+lines(v_grid, T_pred, lwd=1.5, col="red")  
+segments(v_grid, lower_bound, v_grid, upper_bound, col="grey")
+  
+```
+
+**e** If we fix theta1 to get the nest model,we can compare the reduced model with the global model to test whether it is adequate if the normality assumption for the errors is valid. The Anova comparision between the two models indicates that the smaller model is not sufficient,as the p-value is small enough and there is a huge reduction in residual.Sum.Thus we can reject the submodel.We can derive the result directly by conducting the test using RSS,the result also shows that the small model is not good.
+
+```{r}
+model_small <- nls(Time ~ (25 * Viscosity) / (Wt - theta2), data=stormer, start=list(theta2=0))
+anova(model_small, non_linear)
+RSS_small=sum(resid(model_small)^2);RSS=sum(resid(non_linear)^2)
+n=length(resid(non_linear));q=length(coef(non_linear));p=length(coef(model_small))
+f=((RSS_small-RSS)/(q-p))/(RSS/(n-1));f;1-pf(f,q-p,n-q)
+
 ```
